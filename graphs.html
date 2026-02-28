@@ -1,245 +1,317 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<title>Nebula Cloud — Research Graphs</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0f172a;
-    font-family: 'Segoe UI', sans-serif;
-    color: #e2e8f0;
-    padding: 40px 20px;
-  }
-  h1 {
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 10px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .subtitle {
-    text-align: center;
-    color: #64748b;
-    margin-bottom: 50px;
-    font-size: 0.95rem;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    max-width: 1300px;
-    margin: 0 auto;
-  }
-  .card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 20px;
-    padding: 28px;
-  }
-  .card h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #94a3b8;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .card h3 {
-    font-size: 1.2rem;
-    color: #f1f5f9;
-    margin-bottom: 20px;
-  }
-  canvas { width: 100% !important; }
-</style>
+    <meta charset="UTF-8" />
+    <title>Nebula Cloud — Research Graphs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #ffffff;
+            font-family: 'Times New Roman', Times, serif;
+            color: #111111;
+            padding: 40px 30px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #111;
+            letter-spacing: 0.01em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #444;
+            margin-bottom: 48px;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 36px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #fff;
+            border: 1.5px solid #999;
+            border-radius: 4px;
+            padding: 24px 22px 20px;
+        }
+
+        .card h2 {
+            font-size: 0.78rem;
+            font-weight: normal;
+            color: #555;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .card h3 {
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 18px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        canvas {
+            width: 100% !important;
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>☁️ Nebula Cloud — Research Paper Graphs</h1>
-<p class="subtitle">AI-Powered Cloud Storage Performance Benchmarks</p>
+    <h1>Nebula Cloud Storage — Performance Research Graphs</h1>
+    <p class="subtitle">AI-Powered Cloud Storage: Benchmark Comparisons</p>
 
-<div class="grid">
+    <div class="grid">
+        <div class="card">
+            <h2>Figure 1</h2>
+            <h3>Search Accuracy Comparison</h3>
+            <canvas id="g1"></canvas>
+        </div>
+        <div class="card">
+            <h2>Figure 2</h2>
+            <h3>Search Speed vs. Dataset Size (log scale)</h3>
+            <canvas id="g2"></canvas>
+        </div>
+        <div class="card">
+            <h2>Figure 3</h2>
+            <h3>PII / Sensitive Document Detection</h3>
+            <canvas id="g3"></canvas>
+        </div>
+        <div class="card">
+            <h2>Figure 4</h2>
+            <h3>Duplicate Detection Rate by Method</h3>
+            <canvas id="g4"></canvas>
+        </div>
+        <div class="card">
+            <h2>Figure 5</h2>
+            <h3>AI Upload Pipeline — Time Breakdown</h3>
+            <canvas id="g5"></canvas>
+        </div>
+        <div class="card">
+            <h2>Figure 6</h2>
+            <h3>Auto-Tagging Quality (Jaccard Score Distribution)</h3>
+            <canvas id="g6"></canvas>
+        </div>
+    </div>
 
-  <!-- Graph 1 -->
-  <div class="card">
-    <h2>Graph 1</h2>
-    <h3>Search Accuracy Comparison</h3>
-    <canvas id="g1"></canvas>
-  </div>
+    <script>
+        // ── Monochromatic palette: black → dark grey → mid grey → light grey → very light ──
+        const MONO = ['#111111', '#444444', '#777777', '#aaaaaa', '#cccccc'];
+        const GRID_C = '#cccccc';
+        const TEXT_C = '#222222';
+        const BG = '#ffffff';
 
-  <!-- Graph 2 -->
-  <div class="card">
-    <h2>Graph 2</h2>
-    <h3>Search Speed vs. Dataset Size</h3>
-    <canvas id="g2"></canvas>
-  </div>
+        Chart.defaults.color = TEXT_C;
+        Chart.defaults.borderColor = GRID_C;
+        Chart.defaults.font.family = "'Segoe UI', sans-serif";
 
-  <!-- Graph 3 -->
-  <div class="card">
-    <h2>Graph 3</h2>
-    <h3>PII / Sensitive Document Detection</h3>
-    <canvas id="g3"></canvas>
-  </div>
+        function gridOpts(yLabel, xLabel) {
+            return {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: TEXT_C, font: { size: 12 }, boxWidth: 14 } }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: TEXT_C },
+                        grid: { color: GRID_C },
+                        title: xLabel ? { display: true, text: xLabel, color: TEXT_C, font: { size: 12 } } : undefined
+                    },
+                    y: {
+                        ticks: { color: TEXT_C },
+                        grid: { color: GRID_C },
+                        title: yLabel ? { display: true, text: yLabel, color: TEXT_C, font: { size: 12 } } : undefined
+                    }
+                }
+            };
+        }
 
-  <!-- Graph 4 -->
-  <div class="card">
-    <h2>Graph 4</h2>
-    <h3>Duplicate Detection Rate by Method</h3>
-    <canvas id="g4"></canvas>
-  </div>
+        // ── Figure 1: Search Accuracy ────────────────────────────────────
+        new Chart(document.getElementById('g1'), {
+            type: 'bar',
+            data: {
+                labels: ['SQL LIKE\n(Baseline)', 'Fuzzy / pg_trgm', 'Semantic / HNSW\n(Ours)'],
+                datasets: [
+                    {
+                        label: 'Precision (%)', data: [60, 75, 92],
+                        backgroundColor: MONO[0], borderColor: MONO[0], borderWidth: 1
+                    },
+                    {
+                        label: 'Recall (%)', data: [55, 70, 89],
+                        backgroundColor: MONO[2], borderColor: MONO[2], borderWidth: 1
+                    },
+                    {
+                        label: 'F1 Score (%)', data: [57, 72, 90],
+                        backgroundColor: MONO[4], borderColor: MONO[1], borderWidth: 1.5
+                    },
+                ]
+            },
+            options: { ...gridOpts('Score (%)') }
+        });
 
-  <!-- Graph 5 -->
-  <div class="card">
-    <h2>Graph 5</h2>
-    <h3>AI Upload Pipeline — Time Breakdown</h3>
-    <canvas id="g5"></canvas>
-  </div>
+        // ── Figure 2: Speed vs Scale ─────────────────────────────────────
+        new Chart(document.getElementById('g2'), {
+            type: 'line',
+            data: {
+                labels: ['100', '1,000', '10,000', '100,000'],
+                datasets: [
+                    {
+                        label: 'SQL LIKE (Linear Scan)',
+                        data: [5, 45, 420, 4100],
+                        borderColor: MONO[0], backgroundColor: MONO[0],
+                        pointStyle: 'circle', pointRadius: 5,
+                        tension: 0.2, fill: false, borderWidth: 2, borderDash: []
+                    },
+                    {
+                        label: 'Fuzzy / pg_trgm',
+                        data: [3, 6, 9, 12],
+                        borderColor: MONO[2], backgroundColor: MONO[2],
+                        pointStyle: 'rectRot', pointRadius: 5,
+                        tension: 0.2, fill: false, borderWidth: 2, borderDash: [6, 3]
+                    },
+                    {
+                        label: 'Semantic / HNSW (Ours)',
+                        data: [12, 14, 18, 22],
+                        borderColor: MONO[1], backgroundColor: MONO[1],
+                        pointStyle: 'triangle', pointRadius: 6,
+                        tension: 0.2, fill: false, borderWidth: 2, borderDash: [2, 2]
+                    },
+                ]
+            },
+            options: {
+                ...gridOpts('Response Time (ms)', 'Number of Documents'),
+                scales: {
+                    x: {
+                        ticks: { color: TEXT_C }, grid: { color: GRID_C },
+                        title: { display: true, text: 'Number of Documents', color: TEXT_C }
+                    },
+                    y: {
+                        type: 'logarithmic',
+                        ticks: { color: TEXT_C }, grid: { color: GRID_C },
+                        title: { display: true, text: 'Response Time — ms (log scale)', color: TEXT_C }
+                    }
+                }
+            }
+        });
 
-  <!-- Graph 6 -->
-  <div class="card">
-    <h2>Graph 6</h2>
-    <h3>Auto-Tagging Quality (Jaccard Similarity)</h3>
-    <canvas id="g6"></canvas>
-  </div>
+        // ── Figure 3: PII Detection ──────────────────────────────────────
+        new Chart(document.getElementById('g3'), {
+            type: 'bar',
+            data: {
+                labels: ['Regex Pattern', 'Basic ML Classifier', 'Gemini AI (Ours)'],
+                datasets: [
+                    {
+                        label: 'True Positive Rate (%)', data: [48, 71, 94],
+                        backgroundColor: MONO[0], borderColor: MONO[0], borderWidth: 1
+                    },
+                    {
+                        label: 'False Positive Rate (%)', data: [22, 14, 4],
+                        backgroundColor: MONO[3], borderColor: MONO[1], borderWidth: 1.5
+                    },
+                ]
+            },
+            options: gridOpts('Rate (%)')
+        });
 
-</div>
+        // ── Figure 4: Duplicate Detection ───────────────────────────────
+        new Chart(document.getElementById('g4'), {
+            type: 'bar',
+            data: {
+                labels: ['Filename + Size', 'SHA-256 (Ours)', 'MinHash + LSH'],
+                datasets: [
+                    {
+                        label: 'Exact Duplicate', data: [60, 100, 80],
+                        backgroundColor: MONO[0], borderColor: MONO[0], borderWidth: 1
+                    },
+                    {
+                        label: 'Renamed Duplicate', data: [0, 100, 80],
+                        backgroundColor: MONO[2], borderColor: MONO[2], borderWidth: 1
+                    },
+                    {
+                        label: 'Near-Duplicate', data: [0, 0, 85],
+                        backgroundColor: MONO[4], borderColor: MONO[1], borderWidth: 1.5
+                    },
+                ]
+            },
+            options: gridOpts('Detection Rate (%)')
+        });
 
-<script>
-const DARK = '#1e293b';
-const GRID = '#334155';
-const TEXT = '#94a3b8';
+        // ── Figure 5: Pipeline Timing Pie ────────────────────────────────
+        new Chart(document.getElementById('g5'), {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    'File Upload to Storage (300ms)',
+                    'Text Extraction (100ms)',
+                    'Gemini AI Analysis (800ms)',
+                    'Embedding Generation (400ms)',
+                    'Database Write (50ms)'
+                ],
+                datasets: [{
+                    data: [300, 100, 800, 400, 50],
+                    backgroundColor: ['#111111', '#444444', '#777777', '#aaaaaa', '#dddddd'],
+                    borderColor: '#ffffff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: TEXT_C, font: { size: 11 }, padding: 14, boxWidth: 14 }
+                    }
+                }
+            }
+        });
 
-Chart.defaults.color = TEXT;
-Chart.defaults.borderColor = GRID;
+        // ── Figure 6: Jaccard Histogram ──────────────────────────────────
+        const bins = ['0.0–0.1', '0.1–0.2', '0.2–0.3', '0.3–0.4', '0.4–0.5', '0.5–0.6', '0.6–0.7', '0.7–0.8', '0.8–0.9', '0.9–1.0'];
+        const counts = [0, 0, 1, 1, 1, 2, 3, 7, 10, 5];
+        // Gradient from light to dark grey as score increases (better scores = darker = visually prominent)
+        const barShades = bins.map((_, i) => {
+            const lightness = Math.round(230 - i * 18);
+            return `rgb(${lightness},${lightness},${lightness})`;
+        });
 
-function gridOpts(yLabel, xLabel) {
-  return {
-    responsive: true,
-    plugins: {
-      legend: { labels: { color: '#cbd5e1', font: { size: 12 } } }
-    },
-    scales: {
-      x: {
-        ticks: { color: TEXT },
-        grid: { color: GRID },
-        title: xLabel ? { display: true, text: xLabel, color: TEXT } : undefined
-      },
-      y: {
-        ticks: { color: TEXT },
-        grid: { color: GRID },
-        title: yLabel ? { display: true, text: yLabel, color: TEXT } : undefined
-      }
-    }
-  };
-}
-
-// ── Graph 1: Search Accuracy ──────────────────────────────────
-new Chart(document.getElementById('g1'), {
-  type: 'bar',
-  data: {
-    labels: ['SQL LIKE (Baseline)', 'Fuzzy / pg_trgm', 'Semantic / HNSW (ours)'],
-    datasets: [
-      { label: 'Precision (%)', data: [60, 75, 92], backgroundColor: '#64748b' },
-      { label: 'Recall (%)',    data: [55, 70, 89], backgroundColor: '#3b82f6' },
-      { label: 'F1 Score (%)', data: [57, 72, 90], backgroundColor: '#8b5cf6' },
-    ]
-  },
-  options: { ...gridOpts('Score (%)'), plugins: { ...gridOpts().plugins } }
-});
-
-// ── Graph 2: Speed vs Scale (log scale) ───────────────────────
-new Chart(document.getElementById('g2'), {
-  type: 'line',
-  data: {
-    labels: ['100', '1,000', '10,000', '100,000'],
-    datasets: [
-      { label: 'SQL LIKE (Linear)', data: [5, 45, 420, 4100],   borderColor: '#64748b', tension: 0.3, fill: false },
-      { label: 'Fuzzy (pg_trgm)',   data: [3, 6,  9,   12],     borderColor: '#3b82f6', tension: 0.3, fill: false },
-      { label: 'Semantic / HNSW',   data: [12, 14, 18, 22],     borderColor: '#8b5cf6', tension: 0.3, fill: false },
-    ]
-  },
-  options: {
-    ...gridOpts('Response Time (ms)', 'Number of Documents'),
-    scales: {
-      x: { ticks: { color: TEXT }, grid: { color: GRID }, title: { display: true, text: 'Number of Documents', color: TEXT } },
-      y: { type: 'logarithmic', ticks: { color: TEXT }, grid: { color: GRID }, title: { display: true, text: 'Response Time (ms) — log scale', color: TEXT } }
-    }
-  }
-});
-
-// ── Graph 3: PII Detection ────────────────────────────────────
-new Chart(document.getElementById('g3'), {
-  type: 'bar',
-  data: {
-    labels: ['Regex Pattern', 'Basic ML Classifier', 'Gemini AI (ours)'],
-    datasets: [
-      { label: 'True Positive Rate (%)',  data: [48, 71, 94], backgroundColor: '#22c55e' },
-      { label: 'False Positive Rate (%)', data: [22, 14,  4], backgroundColor: '#ef4444' },
-    ]
-  },
-  options: gridOpts('Rate (%)')
-});
-
-// ── Graph 4: Duplicate Detection ──────────────────────────────
-new Chart(document.getElementById('g4'), {
-  type: 'bar',
-  data: {
-    labels: ['Filename + Size', 'SHA-256 (ours)', 'MinHash + LSH'],
-    datasets: [
-      { label: 'Exact Duplicate',   data: [60, 100, 80], backgroundColor: '#64748b' },
-      { label: 'Renamed Duplicate', data: [0,  100, 80], backgroundColor: '#3b82f6' },
-      { label: 'Near-Duplicate',    data: [0,    0, 85], backgroundColor: '#8b5cf6' },
-    ]
-  },
-  options: gridOpts('Detection Rate (%)')
-});
-
-// ── Graph 5: Pipeline Timing Pie ──────────────────────────────
-new Chart(document.getElementById('g5'), {
-  type: 'doughnut',
-  data: {
-    labels: ['File Upload (300ms)', 'Text Extraction (100ms)', 'Gemini AI (800ms)', 'Embedding (400ms)', 'DB Write (50ms)'],
-    datasets: [{
-      data: [300, 100, 800, 400, 50],
-      backgroundColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#22c55e'],
-      borderColor: DARK,
-      borderWidth: 3
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 }, padding: 16 } }
-    }
-  }
-});
-
-// ── Graph 6: Jaccard Histogram ────────────────────────────────
-// Simulated 30-document distribution (skewed high)
-const bins   = ['0.0–0.1','0.1–0.2','0.2–0.3','0.3–0.4','0.4–0.5','0.5–0.6','0.6–0.7','0.7–0.8','0.8–0.9','0.9–1.0'];
-const counts = [0, 0, 1, 1, 1, 2, 3, 7, 10, 5];
-
-new Chart(document.getElementById('g6'), {
-  type: 'bar',
-  data: {
-    labels: bins,
-    datasets: [{
-      label: 'Number of Documents',
-      data: counts,
-      backgroundColor: bins.map((_, i) => `hsl(${200 + i * 16}, 80%, 60%)`),
-      borderRadius: 6
-    }]
-  },
-  options: {
-    ...gridOpts('Number of Documents', 'Jaccard Similarity Score'),
-    plugins: {
-      legend: { display: false },
-      annotation: {}
-    }
-  }
-});
-</script>
+        new Chart(document.getElementById('g6'), {
+            type: 'bar',
+            data: {
+                labels: bins,
+                datasets: [{
+                    label: 'Number of Documents',
+                    data: counts,
+                    backgroundColor: barShades,
+                    borderColor: MONO[1],
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                ...gridOpts('Number of Documents', 'Jaccard Similarity Score (AI Tags vs. Human Tags)'),
+                plugins: { legend: { display: false } }
+            }
+        });
+    </script>
 </body>
+
 </html>

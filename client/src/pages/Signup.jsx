@@ -16,11 +16,33 @@ export default function Signup() {
     const handleSubmit = async e => {
         e.preventDefault();
         if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-        setError(''); setLoading(true);
-        await new Promise(r => setTimeout(r, 900));
-        localStorage.setItem('sb-token', 'mock-token');
-        setLoading(false);
-        navigate('/dashboard');
+        setError('');
+        setLoading(true);
+
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email: form.email,
+                password: form.password,
+                options: {
+                    data: {
+                        full_name: form.name,
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            if (data.session) {
+                localStorage.setItem('sb-token', data.session.access_token);
+                navigate('/dashboard');
+            } else {
+                setError('Check your email for the confirmation link!');
+            }
+            setLoading(false);
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
     };
 
     const strength = form.password.length === 0 ? 0 : form.password.length < 4 ? 1 : form.password.length < 6 ? 2 : form.password.length < 10 ? 3 : 4;

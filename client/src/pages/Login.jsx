@@ -15,10 +15,22 @@ export default function Login() {
         e.preventDefault();
         setError('');
         setLoading(true);
-        await new Promise(r => setTimeout(r, 900));
-        localStorage.setItem('sb-token', 'mock-token');
-        setLoading(false);
-        navigate('/dashboard');
+
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: form.email,
+                password: form.password,
+            });
+
+            if (error) throw error;
+
+            localStorage.setItem('sb-token', data.session.access_token);
+            setLoading(false);
+            navigate('/dashboard');
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
     };
 
     return (

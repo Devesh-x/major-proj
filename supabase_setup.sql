@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS file_metadata (
   size BIGINT,
   type TEXT,
   tags TEXT[],
+  category TEXT, -- New column for Smart Folders
   is_pii BOOLEAN DEFAULT FALSE,
   pii_type TEXT,
   hash TEXT UNIQUE, -- SHA-256 content hash for duplicate detection
@@ -30,6 +31,7 @@ RETURNS TABLE (
   name TEXT,
   title TEXT,
   summary TEXT,
+  category TEXT,
   storage_path TEXT,
   size BIGINT,
   type TEXT,
@@ -48,6 +50,7 @@ BEGIN
     file_metadata.name,
     file_metadata.title,
     file_metadata.summary,
+    file_metadata.category,
     file_metadata.storage_path,
     file_metadata.size,
     file_metadata.type,
@@ -57,7 +60,8 @@ BEGIN
     file_metadata.created_at,
     1 - (file_metadata.embedding <=> query_embedding) AS similarity
   FROM file_metadata
-  WHERE 1 - (file_metadata.embedding <=> query_embedding) > match_threshold
+  WHERE (1 - (file_metadata.embedding <=> query_embedding) > match_threshold)
+  AND (file_metadata.user_id = auth.uid()) -- Security filter
   ORDER BY similarity DESC
   LIMIT match_count;
 END;

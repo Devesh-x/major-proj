@@ -94,6 +94,7 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
           is_pii: analysis.isPII,
           pii_type: analysis.piiType,
           title: analysis.title,
+          category: analysis.category,
           hash: fileHash,
           user_id: req.user.id,
           embedding: embedding

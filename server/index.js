@@ -9,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 const { analyzeFile, generateEmbedding } = require('./services/gemini');
+const { chatWithDocument } = require('./services/standalone_chat');
 const supabase = require('./services/supabase');
 const crypto = require('crypto');
 
@@ -155,6 +156,22 @@ app.get('/api/search', authenticate, async (req, res) => {
     res.json(files);
   } catch (error) {
     console.error('Search error:', error);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+// Chat with Document Endpoint
+app.post('/api/chat', authenticate, async (req, res) => {
+  try {
+    const { fileId, query } = req.body;
+    if (!fileId || !query) return res.status(400).json({ error: 'fileId and query are required' });
+
+    console.log(`User ${req.user.id} chatting with file ${fileId}: ${query}`);
+    const answer = await chatWithDocument(fileId, query, req.user.id);
+
+    res.json({ answer });
+  } catch (error) {
+    console.error('Chat endpoint error:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });

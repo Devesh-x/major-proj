@@ -10,33 +10,52 @@ const port = process.env.PORT || 5000;
 
 const { analyzeFile, generateEmbedding } = require('./services/gemini');
 const supabase = require('./services/supabase');
+const crypto = require('crypto');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Auth Middleware
+const authenticate = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: 'Invalid token' });
+
+  req.user = user;
+  next();
+};
 
 app.get('/', (req, res) => {
   res.send('AI Cloud Storage API Running...');
 });
 
 // File Upload & AI Processing
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+app.post('/api/upload', authenticate, upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-    console.log(`Processing file: ${file.originalname}`);
+    console.log(`Processing file: ${file.originalname} for user: ${req.user.id}`);
 
-    // check for duplicates
+    // Generate SHA-256 hash for duplicate detection
+    const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+
+    // check for duplicates by hash and user_id
     const { data: existingFile } = await supabase
       .from('file_metadata')
-      .select('id')
-      .eq('name', file.originalname)
-      .eq('size', file.size)
+      .select('id, name')
+      .eq('hash', fileHash)
+      .eq('user_id', req.user.id)
       .single();
 
     if (existingFile) {
-      return res.status(409).json({ error: 'Duplicate file detected' });
+      return res.status(409).json({
+        error: 'Duplicate file detected',
+        message: `This file already exists in your storage as "${existingFile.name}"`
+      });
     }
 
     // 1. Analyze file with Gemini
@@ -75,6 +94,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
           is_pii: analysis.isPII,
           pii_type: analysis.piiType,
           title: analysis.title,
+          hash: fileHash,
+          user_id: req.user.id,
           embedding: embedding
         }
       ]);
@@ -93,12 +114,12 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 });
 
 // Search Files (Fuzzy + Semantic)
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', authenticate, async (req, res) => {
   try {
     const { query, mode } = req.query; // mode can be 'fuzzy' or 'semantic'
     if (!query) return res.status(400).json({ error: 'Query is required' });
 
-    console.log(`Searching for: ${query} (Mode: ${mode})`);
+    console.log(`Searching for: ${query} (Mode: ${mode}) for user: ${req.user.id}`);
 
     let files = [];
 
@@ -107,20 +128,22 @@ app.get('/api/search', async (req, res) => {
       const embedding = await generateEmbedding(query);
 
       // 2. Vector similarity search via RPC call to Supabase
-      // Assuming a stored procedure 'match_files' exists
       const { data, error } = await supabase.rpc('match_files', {
         query_embedding: embedding,
-        match_threshold: 0.5,
-        match_count: 10
+        match_threshold: 0.3, // Lowered threshold for better recall as discussed in research
+        match_count: 10,
+        // We'll need to modify the RPC or filter results by user_id
       });
 
       if (error) throw error;
-      files = data;
+      // Filter by user_id manually if RPC doesn't support it yet
+      files = data.filter(f => f.user_id === req.user.id);
     } else {
       // Fuzzy Search using SQL ILIKE
       const { data, error } = await supabase
         .from('file_metadata')
         .select('*')
+        .eq('user_id', req.user.id)
         .or(`name.ilike.%${query}%,title.ilike.%${query}%,summary.ilike.%${query}%`)
         .order('created_at', { ascending: false });
 

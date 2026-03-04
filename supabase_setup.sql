@@ -13,14 +13,15 @@ CREATE TABLE IF NOT EXISTS file_metadata (
   tags TEXT[],
   is_pii BOOLEAN DEFAULT FALSE,
   pii_type TEXT,
-  embedding vector(1536), -- Dimension for text-embedding-004 is usually 768 or 1536, let's assume 1536 for high quality
+  hash TEXT UNIQUE, -- SHA-256 content hash for duplicate detection
+  embedding vector(768), -- Dimension for text-embedding-004 is 768
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID -- Link to Auth if needed
+  user_id UUID REFERENCES auth.users(id) -- Link to Supabase Auth
 );
 
 -- Semantic Search Function (RPC)
 CREATE OR REPLACE FUNCTION match_files (
-  query_embedding vector(1536),
+  query_embedding vector(768),
   match_threshold FLOAT,
   match_count INT
 )

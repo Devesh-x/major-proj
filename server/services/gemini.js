@@ -25,15 +25,16 @@ async function analyzeFile(file) {
         textContent = `[Image/Binary File: ${file.originalname}]`;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `
     Analyze the following document content and provide the following in JSON format:
-    1. "tags": (Array of strings) Relevant tags for this document.
+    1. "tags": (Array of strings) Relevant keywords for this document.
     2. "summary": (String) A brief 1-2 sentence summary.
-    3. "isPII": (Boolean) Does this document look like a sensitive ID proof (Passport, National ID, Social Security, etc.)?
+    3. "isPII": (Boolean) Does this document look like a sensitive ID proof (Passport, National ID, Social Security, PAN, etc.)?
     4. "piiType": (String or null) If isPII is true, what type of ID is it?
-    5. "title": (String) A Descriptive title for the file if the original is vague.
+    5. "title": (String) A descriptive title for the file.
+    6. "category": (String) A single high-level category for organization (e.g., 'Finance', 'Work', 'Personal', 'Identity', 'Legal').
 
     Document Content:
     ${textContent.substring(0, 10000)} 
@@ -46,10 +47,11 @@ async function analyzeFile(file) {
     // Clean JSON response (handled carefully because AI might wrap it in markdown block)
     try {
         const jsonStr = text.match(/\{[\s\S]*\}/)[0];
-        return JSON.parse(jsonStr);
+        const result = JSON.parse(jsonStr);
+        return { ...result, textContent }; // Return text content for storage
     } catch (e) {
         console.error('Failed to parse Gemini response:', text);
-        return { tags: ['general'], summary: 'Could not analyze content', isPII: false };
+        return { tags: ['general'], summary: 'Could not analyze content', isPII: false, textContent };
     }
 }
 
@@ -57,7 +59,7 @@ async function analyzeFile(file) {
  * Generates an embedding for the document content for semantic search.
  */
 async function generateEmbedding(text) {
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
     const result = await model.embedContent(text.substring(0, 8000));
     return result.embedding.values;
 }

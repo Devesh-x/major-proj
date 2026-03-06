@@ -33,7 +33,7 @@ export default function Dashboard() {
 
     // Core State
     const [files, setFiles] = useState([]); // Will fetch from DB
-    const [categories, setCategories] = useState(['All', 'Finance', 'Work', 'Identity', 'Personal']);
+    const [categories, setCategories] = useState(['All']);
     const [activeCategory, setActiveCategory] = useState('All');
 
     // Search & View State
@@ -52,6 +52,8 @@ export default function Dashboard() {
     // Upload/Alert State
     const [alert, setAlert] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [summarizingFolder, setSummarizingFolder] = useState(false);
+    const [folderSummary, setFolderSummary] = useState(null);
 
     const fetchFiles = async () => {
         try {
@@ -60,8 +62,29 @@ export default function Dashboard() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setFiles(Array.isArray(data) ? data : data.results || []);
+            const fileList = Array.isArray(data) ? data : (data.results || []);
+            setFiles(fileList);
+
+            // Dynamically build categories from files
+            const cats = ['All', ...new Set(fileList.map(f => f.category).filter(Boolean))];
+            setCategories(cats);
         } catch (err) { console.error("Fetch failed", err); }
+    };
+
+    const handleSummarizeFolder = async () => {
+        if (activeCategory === 'All') return;
+        setSummarizingFolder(true);
+        try {
+            const token = localStorage.getItem('sb-token');
+            const res = await fetch('http://localhost:5000/api/summarize-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ category: activeCategory })
+            });
+            const data = await res.json();
+            setFolderSummary(data.folderSummary);
+        } catch (err) { console.error("Summary failed", err); }
+        finally { setSummarizingFolder(false); }
     };
 
     React.useEffect(() => { fetchFiles(); }, []);
@@ -98,7 +121,8 @@ export default function Dashboard() {
             });
 
             if (res.status === 409) {
-                alert("SHA-256 Check: Exact duplicate detected. Storage denied.");
+                const data = await res.json();
+                setAlert({ type: 'error', message: data.message || "Duplicate detected" });
                 setUploading(false);
                 return;
             }
@@ -281,29 +305,44 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* AI Benchmarking Alert (Comparison 5) */}
+                    {/* AI Processing Alert */}
                     {alert && (
-                        <div style={{ marginBottom: 28, background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 16, padding: '16px 20px', position: 'relative' }}>
+                        <div style={{
+                            marginBottom: 28,
+                            background: alert.type === 'error' ? 'rgba(239,68,68,0.08)' : 'rgba(37,99,235,0.08)',
+                            border: `1px solid ${alert.type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(37,99,235,0.15)'}`,
+                            borderRadius: 16, padding: '16px 20px', position: 'relative'
+                        }}>
                             <button onClick={() => setAlert(null)} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}><X size={16} /></button>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                                <Brain size={18} color="#60a5fa" />
-                                <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>AI Processing Benchmarks for "{alert.name}"</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: alert.metrics ? 12 : 0 }}>
+                                {alert.type === 'error' ? <ShieldAlert size={18} color="#ef4444" /> : <Brain size={18} color="#60a5fa" />}
+                                <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>
+                                    {alert.type === 'error' ? alert.message : `AI Processing Complete for "${alert.name}"`}
+                                </h3>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                                {[['Hashing', 'hash'], ['Gemini AI', 'analysis'], ['Embedding', 'embedding'], ['Storage', 'storage']].map(([label, key]) => (
-                                    <div key={key} style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <p style={{ fontSize: '0.62rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{label}</p>
-                                        <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#60a5fa' }}>{alert.metrics.stages[key]}ms</p>
-                                    </div>
-                                ))}
-                            </div>
+                            {alert.metrics && (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                                    {[['Hashing', 'hash'], ['Analysis', 'analysis'], ['Vectors', 'embedding'], ['Storage', 'storage']].map(([label, key]) => (
+                                        <div key={key} style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <p style={{ fontSize: '0.62rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{label}</p>
+                                            <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#60a5fa' }}>{alert.metrics.stages[key]}ms</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* Title row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <h1 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{activeCategory} Files</h1>
+                            {activeCategory !== 'All' && (
+                                <button onClick={handleSummarizeFolder} disabled={summarizingFolder}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 8, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
+                                    {summarizingFolder ? <><span style={{ width: 10, height: 10, border: '2px solid rgba(96,165,250,0.3)', borderTopColor: '#60a5fa', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} /> Generating…</> : <><Brain size={12} /> Summarize Folder</>}
+                                </button>
+                            )}
                         </div>
                         <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 3 }}>
                             {[['grid', LayoutGrid], ['list', List]].map(([v, Icon]) => (
@@ -314,6 +353,18 @@ export default function Dashboard() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Folder AI Summary Box */}
+                    {folderSummary && (
+                        <div style={{ marginBottom: 24, background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 16, padding: '16px 20px', position: 'relative' }}>
+                            <button onClick={() => setFolderSummary(null)} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}><X size={16} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <Brain size={16} color="#a78bfa" />
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folder Intelligence Insight</span>
+                            </div>
+                            <p style={{ fontSize: '0.85rem', lineHeight: 1.5, color: '#f1f5f9', fontWeight: 500 }}>{folderSummary}</p>
+                        </div>
+                    )}
 
                     {/* Files Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>

@@ -1,5 +1,6 @@
--- Enable pgvector extension
+-- Enable Extensions
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- File Metadata Table
 CREATE TABLE IF NOT EXISTS file_metadata (
@@ -16,11 +17,17 @@ CREATE TABLE IF NOT EXISTS file_metadata (
   pii_type TEXT,
   hash TEXT UNIQUE, -- SHA-256 content hash for duplicate detection
   embedding vector(768), -- Dimension for text-embedding-004 is 768
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) -- Link to Supabase Auth
+  user_id UUID REFERENCES auth.users(id), -- Link to Supabase Auth
+  metrics JSONB -- To store timing data for research (Comparison 5)
 );
 
+-- Indexes for Performance
+CREATE INDEX ON file_metadata USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX idx_file_title_trgm ON file_metadata USING gist (title gist_trgm_ops);
+CREATE INDEX idx_file_summary_trgm ON file_metadata USING gist (summary gist_trgm_ops);
+
 -- Semantic Search Function (RPC)
+-- (Rest of the file remains same, but ensured for reference)
 CREATE OR REPLACE FUNCTION match_files (
   query_embedding vector(768),
   match_threshold FLOAT,

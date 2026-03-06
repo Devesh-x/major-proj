@@ -33,18 +33,21 @@ app.get('/', (req, res) => {
   res.send('AI Cloud Storage API Running...');
 });
 
-// File Upload & AI Processing
+// File Upload & AI Processing (Benchmarked)
 app.post('/api/upload', authenticate, upload.single('file'), async (req, res) => {
+  const t0 = Date.now();
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
     console.log(`Processing file: ${file.originalname} for user: ${req.user.id}`);
 
-    // Generate SHA-256 hash for duplicate detection
+    // 1. Content Hashing (SHA-256) - Timing
+    const h0 = Date.now();
     const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    const hashTime = Date.now() - h0;
 
-    // check for duplicates by hash and user_id
+    // Check for duplicates
     const { data: existingFile } = await supabase
       .from('file_metadata')
       .select('id, name')
@@ -59,18 +62,23 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
       });
     }
 
-    // 1. Analyze file with Gemini
+    // 2. Analyze file with Gemini - Timing
+    const a0 = Date.now();
     const analysis = await analyzeFile(file);
+    const analysisTime = Date.now() - a0;
 
-    // 2. Generate Embedding for Semantic Search
+    // 3. Generate Embedding for Semantic Search - Timing
+    const v0 = Date.now();
     let embedding = null;
     try {
-      embedding = await generateEmbedding(file.buffer.toString('utf8').substring(0, 5000));
+      embedding = await generateEmbedding(`${analysis.title} ${analysis.summary} ${analysis.tags.join(' ')}`);
     } catch (e) {
       console.warn('Embedding generation failed, skipping...');
     }
+    const embeddingTime = Date.now() - v0;
 
-    // 3. Upload to Supabase Storage
+    // 4. Upload to Supabase Storage - Timing
+    const u0 = Date.now();
     const fileName = `${Date.now()}-${file.originalname}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('files')
@@ -78,10 +86,21 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
         contentType: file.mimetype,
         upsert: false
       });
-
     if (uploadError) throw uploadError;
+    const uploadStoreTime = Date.now() - u0;
 
-    // 4. Save metadata to Database
+    // 5. Database Write with Metrics
+    const d0 = Date.now();
+    const metrics = {
+      total: Date.now() - t0,
+      stages: {
+        hash: hashTime,
+        analysis: analysisTime,
+        embedding: embeddingTime,
+        storage: uploadStoreTime
+      }
+    };
+
     const { data: dbData, error: dbError } = await supabase
       .from('file_metadata')
       .insert([
@@ -98,16 +117,18 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
           category: analysis.category,
           hash: fileHash,
           user_id: req.user.id,
-          embedding: embedding
+          embedding: embedding,
+          metrics: metrics
         }
-      ]);
+      ]).select();
 
     if (dbError) throw dbError;
 
     res.json({
-      message: 'File uploaded and analyzed successfully',
+      message: 'File analyzed and stored successfully',
       metadata: analysis,
-      storage_path: uploadData.path
+      metrics: metrics,
+      file: dbData[0]
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -115,45 +136,44 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
   }
 });
 
-// Search Files (Fuzzy + Semantic)
+// Search Files (Benchmarked Hybrid Search)
 app.get('/api/search', authenticate, async (req, res) => {
+  const tStart = Date.now();
   try {
-    const { query, mode } = req.query; // mode can be 'fuzzy' or 'semantic'
+    const { query, mode = 'fuzzy' } = req.query;
     if (!query) return res.status(400).json({ error: 'Query is required' });
 
-    console.log(`Searching for: ${query} (Mode: ${mode}) for user: ${req.user.id}`);
-
-    let files = [];
+    let results = [];
 
     if (mode === 'semantic') {
-      // 1. Generate embedding for query
       const embedding = await generateEmbedding(query);
-
-      // 2. Vector similarity search via RPC call to Supabase
       const { data, error } = await supabase.rpc('match_files', {
         query_embedding: embedding,
-        match_threshold: 0.3, // Lowered threshold for better recall as discussed in research
-        match_count: 10,
-        // We'll need to modify the RPC or filter results by user_id
+        match_threshold: 0.3,
+        match_count: 10
       });
-
       if (error) throw error;
-      // Filter by user_id manually if RPC doesn't support it yet
-      files = data.filter(f => f.user_id === req.user.id);
+      results = data;
     } else {
-      // Fuzzy Search using SQL ILIKE
+      // Fuzzy Search using pg_trgm (via ILIKE with our new GIST indexes)
       const { data, error } = await supabase
         .from('file_metadata')
         .select('*')
         .eq('user_id', req.user.id)
-        .or(`name.ilike.%${query}%,title.ilike.%${query}%,summary.ilike.%${query}%`)
+        .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      files = data;
+      results = data;
     }
 
-    res.json(files);
+    res.json({
+      results,
+      performance: {
+        time_ms: Date.now() - tStart,
+        mode: mode
+      }
+    });
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });

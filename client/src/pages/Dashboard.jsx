@@ -185,7 +185,7 @@ export default function Dashboard() {
                 <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
                     {/* Dashboard Summary Chips */}
-                    <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
                         <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
                             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <FileText size={20} color="#3b82f6" />
@@ -214,6 +214,25 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </div>
+
+                    {/* AI Benchmarking Alert (Comparison 5) */}
+                    {alert && (
+                        <div style={{ marginBottom: 28, background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 16, padding: '16px 20px', position: 'relative' }}>
+                            <button onClick={() => setAlert(null)} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}><X size={16} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                                <Brain size={18} color="#60a5fa" />
+                                <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>AI Processing Benchmarks for "{alert.name}"</h3>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                                {[['Hashing', 'hash'], ['Gemini AI', 'analysis'], ['Embedding', 'embedding'], ['Storage', 'storage']].map(([label, key]) => (
+                                    <div key={key} style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <p style={{ fontSize: '0.62rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{label}</p>
+                                        <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#60a5fa' }}>{alert.metrics.stages[key]}ms</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Title row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>

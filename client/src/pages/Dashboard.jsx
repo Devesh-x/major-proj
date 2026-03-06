@@ -137,6 +137,12 @@ export default function Dashboard() {
         }
     };
 
+    const togglePrivacy = (fileId) => {
+        const pin = prompt("Enter Security Pin to Unlock (Demo: 1234):");
+        if (pin === '1234') setPrivacyUnlocked(prev => ({ ...prev, [fileId]: true }));
+        else if (pin !== null) alert("Identity Verification Failed.");
+    };
+
     const handleChat = async e => {
         e.preventDefault();
         if (!chatQuery.trim() || !selectedFile) return;
@@ -162,9 +168,6 @@ export default function Dashboard() {
         }
     };
 
-    const togglePrivacy = (id) => {
-        setPrivacyUnlocked(p => ({ ...p, [id]: !p[id] }));
-    };
 
     const filteredFiles = files.filter(f => activeCategory === 'All' || f.category === activeCategory);
 

@@ -169,6 +169,23 @@ app.post('/api/summarize-category', authenticate, async (req, res) => {
   }
 });
 
+// Update File Tags
+app.post('/api/update-tags', authenticate, async (req, res) => {
+  try {
+    const { fileId, tags } = req.body;
+    const { error } = await supabase
+      .from('file_metadata')
+      .update({ tags })
+      .eq('id', fileId)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ message: 'Tags updated' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Search Files (Benchmarked Hybrid Search)
 app.get('/api/search', authenticate, async (req, res) => {
   const tStart = Date.now();

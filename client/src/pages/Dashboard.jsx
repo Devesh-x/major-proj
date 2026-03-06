@@ -410,10 +410,16 @@ export default function Dashboard() {
                                     <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4, height: 40, overflow: 'hidden', marginBottom: 12 }}>{f.summary}</p>
 
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 'auto' }}>
-                                        <div style={{ display: 'flex', gap: 4 }}>
-                                            {f.tags.slice(0, 1).map(t => (
-                                                <span key={t} style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: 8, background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.1)' }}>#{t}</span>
+                                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                            {f.tags.slice(0, 2).map(t => (
+                                                <span key={t} onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newTags = prompt("Edit Tags (comma separated):", f.tags.join(', '));
+                                                    if (newTags !== null) handleUpdateTags(f.id, newTags.split(',').map(s => s.trim()));
+                                                }}
+                                                    style={{ fontSize: '0.62rem', padding: '3px 8px', borderRadius: 6, background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.1)', cursor: 'pointer' }}>#{t}</span>
                                             ))}
+                                            {f.tags.length > 2 && <span style={{ fontSize: '0.62rem', color: '#475569' }}>+{f.tags.length - 2}</span>}
                                         </div>
                                         <span style={{ fontSize: '0.65rem', color: '#334155', fontWeight: 600 }}>{fmtSize(f.size)}</span>
                                     </div>

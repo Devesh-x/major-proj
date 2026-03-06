@@ -382,12 +382,13 @@ export default function Dashboard() {
 
                                     {/* PII Shield Overlay (Blur) */}
                                     {isBlurred && (
-                                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,11,24,0.4)', backdropFilter: 'blur(12px)', zALayer: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, textAlign: 'center' }}>
-                                            <ShieldAlert size={24} color="#ef4444" style={{ marginBottom: 10 }} />
-                                            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', marginBottom: 12 }}>Sensitive Content</p>
+                                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,11,24,0.4)', backdropFilter: 'blur(12px)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, textAlign: 'center' }}>
+                                            <ShieldAlert size={28} color="#ef4444" style={{ marginBottom: 12 }} />
+                                            <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 4 }}>Secured Document</p>
+                                            <p style={{ fontSize: '0.6rem', color: '#94a3b8', marginBottom: 16 }}>Identity Verification Required</p>
                                             <button onClick={(e) => { e.stopPropagation(); togglePrivacy(f.id); }}
-                                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer' }}>
-                                                Unlock View
+                                                style={{ padding: '8px 14px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
+                                                Unlock Secure View
                                             </button>
                                         </div>
                                     )}

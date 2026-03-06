@@ -19,6 +19,7 @@ export default function Dashboard() {
     const [query, setQuery] = useState('');
     const [mode, setMode] = useState('fuzzy');
     const [viewMode, setViewMode] = useState('grid');
+    const [searchPerf, setSearchPerf] = useState(null); // Comparison 1 & 2
 
     // AI Standout Features State
     const [selectedFile, setSelectedFile] = useState(null); // For "Talk to Your File"
@@ -31,20 +32,64 @@ export default function Dashboard() {
     const [alert, setAlert] = useState(null);
     const [uploading, setUploading] = useState(false);
 
-    // Initial Fetch (Mocked for UI/UX demonstration of Smart Folders)
-    React.useEffect(() => {
-        // In real app: fetchFiles();
-        setFiles([
-            { id: 1, name: 'Passport_Scan.pdf', type: 'application/pdf', size: 1200000, is_pii: true, tags: ['identity', 'travel'], title: 'Passport Document', summary: 'Government-issued international travel document.', category: 'Identity' },
-            { id: 2, name: 'Q4_Report_2025.pdf', type: 'application/pdf', size: 800000, is_pii: false, tags: ['finance', 'report'], title: 'Q4 Financial Report', summary: 'Quarterly financial summary including revenue and expenses.', category: 'Finance' },
-            { id: 5, name: 'Invoice_001.pdf', type: 'application/pdf', size: 210000, is_pii: false, tags: ['finance', 'invoice'], title: 'Service Invoice #001', summary: 'Invoice for freelance development services.', category: 'Finance' },
-            { id: 8, name: 'Aadhar_Card.pdf', type: 'application/pdf', size: 980000, is_pii: true, tags: ['identity', 'govt'], title: 'Aadhaar Card', summary: 'Indian government national ID document.', category: 'Identity' },
-        ]);
-    }, []);
+    const fetchFiles = async () => {
+        try {
+            const token = localStorage.getItem('sb-token');
+            const res = await fetch('http://localhost:5000/api/search?query=&mode=fuzzy', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setFiles(Array.isArray(data) ? data : data.results || []);
+        } catch (err) { console.error("Fetch failed", err); }
+    };
+
+    React.useEffect(() => { fetchFiles(); }, []);
 
     const handleSearch = async e => {
         e.preventDefault();
-        // In real app: axios.get(`/api/search?query=${query}&mode=${mode}`).then(...)
+        if (!query.trim()) { fetchFiles(); setSearchPerf(null); return; }
+
+        try {
+            const token = localStorage.getItem('sb-token');
+            const res = await fetch(`http://localhost:5000/api/search?query=${query}&mode=${mode}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setFiles(data.results);
+            setSearchPerf(data.performance);
+        } catch (err) { console.error("Search failed", err); }
+    };
+
+    const handleUpload = async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const token = localStorage.getItem('sb-token');
+            const res = await fetch('http://localhost:5000/api/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (res.status === 409) {
+                alert("SHA-256 Check: Exact duplicate detected. Storage denied.");
+                setUploading(false);
+                return;
+            }
+
+            const data = await res.json();
+            setAlert({ type: 'success', name: file.name, metrics: data.metrics });
+            fetchFiles();
+        } catch (err) {
+            console.error("Upload failed", err);
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleChat = async e => {

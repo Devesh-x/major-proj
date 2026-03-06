@@ -169,6 +169,33 @@ app.post('/api/summarize-category', authenticate, async (req, res) => {
   }
 });
 
+// Delete File
+app.delete('/api/delete-file/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Get storage path
+    const { data: file, error: fetchErr } = await supabase
+      .from('file_metadata')
+      .select('storage_path')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (fetchErr || !file) throw new Error('File not found');
+
+    // 2. Delete from Storage
+    await supabase.storage.from('files').remove([file.storage_path]);
+
+    // 3. Delete from DB
+    await supabase.from('file_metadata').delete().eq('id', id);
+
+    res.json({ message: 'File deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Update File Tags
 app.post('/api/update-tags', authenticate, async (req, res) => {
   try {

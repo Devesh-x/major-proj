@@ -1,10 +1,31 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Cloud, LayoutGrid, List, Search, Upload, Bell,
     FileText, Image as ImageIcon, File, ShieldAlert, Trash2, Download,
     Brain, FolderOpen, Clock, SearchCode, Settings, LogOut,
     MessageSquare, Eye, EyeOff, Send, X, ChevronRight, Bookmark
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+
+const NAV = [
+    { path: '/dashboard', icon: LayoutGrid, label: 'All Files' },
+    { path: '#insights', icon: Brain, label: 'AI Insights' },
+    { path: '#recent', icon: Clock, label: 'Recent' },
+    { path: '#search', icon: SearchCode, label: 'Smart Search' },
+    { path: '/profile', icon: Settings, label: 'Settings' },
+];
+
+function FileIcon({ type }) {
+    if (type?.startsWith('image')) return <ImageIcon size={22} color="#a78bfa" />;
+    if (type?.includes('pdf')) return <FileText size={22} color="#f87171" />;
+    return <File size={22} color="#94a3b8" />;
+}
+
+function fmtSize(b) {
+    if (!b) return '0 KB';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+}
 
 export default function Dashboard() {
     const navigate = useNavigate();

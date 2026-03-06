@@ -143,6 +143,18 @@ export default function Dashboard() {
         else if (pin !== null) alert("Identity Verification Failed.");
     };
 
+    const handleUpdateTags = async (fileId, newTags) => {
+        try {
+            const token = localStorage.getItem('sb-token');
+            await fetch('http://localhost:5000/api/update-tags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ fileId, tags: newTags })
+            });
+            fetchFiles();
+        } catch (err) { console.error("Update tags failed", err); }
+    };
+
     const handleChat = async e => {
         e.preventDefault();
         if (!chatQuery.trim() || !selectedFile) return;
@@ -402,7 +414,8 @@ export default function Dashboard() {
                                         </div>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             <button style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}><Download size={14} /></button>
-                                            <button style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}><MessageSquare size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(f.id); }}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', transition: '0.2s' }}><Trash2 size={14} /></button>
                                         </div>
                                     </div>
 

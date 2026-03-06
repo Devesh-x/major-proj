@@ -1,12 +1,150 @@
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
 
+const isLocal = process.env.RUN_LOCAL === 'true';
+const dbPath = path.join(__dirname, '..', 'db.json');
+const uploadDir = path.join(__dirname, '..', 'uploads');
+
+// Load/Init Local DB
+const getLocalData = () => {
+    if (!fs.existsSync(dbPath)) return { files: [] };
+    return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+};
+const saveLocalData = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+
+// Cloud Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const cloudClient = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-if (!supabaseUrl || !supabaseKey) {
-    console.warn('Supabase credentials missing. Ensure SUPABASE_URL and SUPABASE_ANON_KEY are set in .env');
-}
+// Vector Similarity Helper (Cosine Similarity)
+const dotProduct = (a, b) => a.reduce((sum, val, i) => sum + val * b[i], 0);
+const magnitude = (arr) => Math.sqrt(arr.reduce((sum, val) => sum + val * val, 0));
+const cosineSimilarity = (a, b) => {
+    if (!a || !b) return 0;
+    return dotProduct(a, b) / (magnitude(a) * magnitude(b));
+};
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const db = {
+    from: (table) => {
+        if (!isLocal) return cloudClient.from(table);
 
-module.exports = supabase;
+        return {
+            select: () => ({
+                eq: (col, val) => ({
+                    eq: (c2, v2) => ({
+                        single: async () => {
+                            const { files } = getLocalData();
+                            const f = files.find(x => x[col] === val && x[c2] === v2);
+                            return { data: f || null, error: null };
+                        },
+                        order: async (sort, { ascending }) => {
+                            const { files } = getLocalData();
+                            const results = files.filter(x => x[col] === val && x[c2] === v2)
+                                .sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
+                            return { data: results, error: null };
+                        }
+                    }),
+                    single: async () => {
+                        const { files } = getLocalData();
+                        const f = files.find(x => x[col] === val);
+                        return { data: f || null, error: null };
+                    }
+                }),
+                or: (filterStr) => ({
+                    order: async (sort, { ascending }) => {
+                        const { files } = getLocalData();
+                        const query = filterStr.split(',')[0].split('.').pop().replace(/%/g, '').toLowerCase();
+                        const results = files.filter(f =>
+                            f.title?.toLowerCase().includes(query) ||
+                            f.summary?.toLowerCase().includes(query)
+                        ).sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
+                        return { data: results, error: null };
+                    }
+                }),
+                order: async (sort, { ascending }) => {
+                    const { files } = getLocalData();
+                    const results = files.sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
+                    return { data: results, error: null };
+                }
+            }),
+            insert: (rows) => ({
+                select: async () => {
+                    const data = getLocalData();
+                    const newRows = rows.map(r => ({
+                        id: Math.random().toString(36).substr(2, 9),
+                        created_at: new Date().toISOString(),
+                        ...r
+                    }));
+                    data.files.push(...newRows);
+                    saveLocalData(data);
+                    return { data: newRows, error: null };
+                }
+            }),
+            update: (updates) => ({
+                eq: (col, val) => ({
+                    eq: async (c2, v2) => {
+                        const data = getLocalData();
+                        data.files = data.files.map(f => (f[col] === val && f[c2] === v2) ? { ...f, ...updates } : f);
+                        saveLocalData(data);
+                        return { error: null };
+                    }
+                })
+            }),
+            delete: () => ({
+                eq: async (col, val) => {
+                    const data = getLocalData();
+                    data.files = data.files.filter(f => f[col] !== val);
+                    saveLocalData(data);
+                    return { error: null };
+                }
+            })
+        };
+    },
+
+    rpc: async (name, params) => {
+        if (!isLocal) return cloudClient.rpc(name, params);
+        if (name === 'match_files') {
+            const { files } = getLocalData();
+            const results = files.map(f => ({
+                ...f,
+                similarity: cosineSimilarity(f.embedding, params.query_embedding)
+            }))
+                .filter(f => f.similarity >= params.match_threshold)
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, params.match_count);
+            return { data: results, error: null };
+        }
+    },
+
+    storage: {
+        from: (folder) => {
+            if (!isLocal) return cloudClient.storage.from(folder);
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+            return {
+                upload: async (fileName, buffer) => {
+                    fs.writeFileSync(path.join(uploadDir, fileName), buffer);
+                    return { data: { path: fileName }, error: null };
+                },
+                remove: async (paths) => {
+                    paths.forEach(p => {
+                        const fp = path.join(uploadDir, p);
+                        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+                    });
+                    return { data: null, error: null };
+                }
+            };
+        }
+    },
+
+    auth: {
+        getUser: async () => {
+            if (!isLocal) return cloudClient.auth.getUser();
+            return { data: { user: { id: 'local-user-123', email: 'local@nebula.ai' } }, error: null };
+        }
+    }
+};
+
+module.exports = db;

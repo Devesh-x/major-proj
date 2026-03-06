@@ -118,7 +118,8 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
           hash: fileHash,
           user_id: req.user.id,
           embedding: embedding,
-          metrics: metrics
+          metrics: metrics,
+          full_text: analysis.textContent
         }
       ]).select();
 
@@ -133,6 +134,38 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+// Summarize Entire Category (Folder Insight)
+app.post('/api/summarize-category', authenticate, async (req, res) => {
+  try {
+    const { category } = req.body;
+    if (!category) return res.status(400).json({ error: 'Category is required' });
+
+    console.log(`Summarizing category ${category} for user ${req.user.id}`);
+
+    // Fetch all summaries in this category
+    const { data: files, error } = await supabase
+      .from('file_metadata')
+      .select('title, summary')
+      .eq('user_id', req.user.id)
+      .eq('category', category);
+
+    if (error) throw error;
+    if (!files.length) return res.json({ summary: 'No files in this folder to summarize.' });
+
+    const context = files.map(f => `- ${f.title}: ${f.summary}`).join('\n');
+    const result = await analyzeFile({
+      mimetype: 'text/plain',
+      buffer: Buffer.from(`Summarize these document summaries for the folder "${category}":\n${context}`),
+      originalname: `${category}_summary.txt`
+    });
+
+    res.json({ folderSummary: result.summary });
+  } catch (error) {
+    console.error('Folder summary error:', error);
+    res.status(500).json({ error: 'Failed to generate folder summary' });
   }
 });
 

@@ -6,7 +6,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 
-// Simple auth guard — replace with Supabase session check later
+// Simple auth guard — replace with actual session check later
 const RequireAuth = ({ children }) => {
   const token = localStorage.getItem('sb-token');
   return token ? children : <Navigate to="/login" replace />;

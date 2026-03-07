@@ -1,22 +1,22 @@
-# ☁️ Nebula Cloud — AI-Powered Cloud Storage
+# ☁️ CloudSense — AI-Powered Cloud Storage
 
-> An intelligent cloud storage platform that uses **Gemini AI** to automatically parse, tag, and secure your files — with both fuzzy and semantic search built in.
+> An intelligent, secure cloud storage platform that leverages advanced AI to automatically analyze, organize, and protect your digital assets. With integrated semantic search, CloudSense understands the context of your files, not just their filenames.
 
-![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20Supabase%20%7C%20Gemini-blue)
+![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20Cloud--Native-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
-## ✨ Features
+## ✨ Key Capabilities
 
-| Feature | Description |
+| Capability | Description |
 |---|---|
-| 🤖 **AI Auto-Tagging** | Gemini parses every uploaded file and generates titles, summaries, and tags automatically |
-| 🔍 **Fuzzy Search** | Fast keyword-based search across file names, titles, and summaries |
-| 🧠 **Semantic Search** | Find files by meaning, not just words — powered by vector embeddings |
-| 🛡️ **PII Detection** | Automatically flags sensitive documents (Passport, National ID, etc.) with a security alert |
-| 🔁 **Duplicate Prevention** | Blocks re-uploading of identical files using SHA-256 content hashing |
-| 🎨 **Premium Dashboard** | Glassmorphism UI with drag-and-drop uploads and real-time feedback |
+| 🤖 **Automated Insights** | Our AI pipeline processes every upload to generate intelligent titles, summaries, and categorizations. |
+| 🔍 **Fuzzy Search** | Blazing-fast keyword matching across file names, AI-generated metadata, and summaries. |
+| 🧠 **Semantic Search** | Discover files by meaning and context—ask for "travel documents" and find your passport instantly. |
+| 🛡️ **Sensitive Data Guard** | Proactive detection of identity documents and PII, ensuring your most private files are flagged and secured. |
+| 🔁 **Smart Deduplication** | Intelligent hashing prevents redundant uploads, keeping your storage optimized and clean. |
+| 🎨 **Executive Dashboard** | A premium, minimalist interface designed for high-performance file management. |
 
 ---
 
@@ -134,47 +134,38 @@ User Uploads File
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Architecture
 
 ```
 major-proj/
-├── client/                  # React frontend
-│   └── src/
-│       ├── App.jsx          # Main dashboard
-│       └── index.css        # Tailwind + global styles
-├── server/                  # Node.js backend
-│   ├── services/
-│   │   ├── gemini.js        # AI analysis + embeddings
-│   │   └── supabase.js      # DB client
-│   └── index.js             # Express API routes
-├── supabase_setup.sql       # Database schema + RPC functions
+├── client/                  # Frontend Application (React)
+├── server/                  # Backend Services (Node.js)
+├── supabase_setup.sql       # Database Infrastructure
 └── README.md
 ```
 
 ---
 
-## 🔬 Algorithms
+## 🔬 Core Algorithms
 
-| Feature | Algorithm | Time Complexity |
-|---|---|---|
-| Fuzzy Search | `pg_trgm` trigram matching | O(log n) |
-| Semantic Search | HNSW Approximate Nearest Neighbor | O(log n) |
-| Similarity Scoring | Cosine Similarity | O(d) |
-| Duplicate Detection | SHA-256 content hash | O(1) |
-| AI Tagging | Gemini transformer (zero-shot) | — |
+| Feature | Methodology |
+|---|---|
+| Search Indexing | Advanced Vector Space Modeling |
+| Discovery | Semantic Contextual Hybrid Search |
+| Optimization | Intelligent Content Fingerprinting |
+| AI Pipeline | Transformer-based Extraction |
 
 ---
 
-## 📄 API Reference
+## 📄 API Specifications
 
-| Method | Endpoint | Description |
+| Method | Endpoint | Functionality |
 |---|---|---|
-| `POST` | `/api/upload` | Upload a file; triggers AI analysis |
-| `GET` | `/api/search?query=&mode=fuzzy` | Keyword/fuzzy file search |
-| `GET` | `/api/search?query=&mode=semantic` | Semantic vector search |
+| `POST` | `/api/upload` | Ingests file and triggers automated AI analysis |
+| `GET` | `/api/search` | Context-aware document retrieval |
 
 ---
 
 ## 📜 License
 
-MIT © 2026 Devesh
+MIT © 2026 CloudSense

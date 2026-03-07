@@ -24,7 +24,7 @@ async function chatWithDocument(fileId, userQuery, userId) {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
-            You are an AI assistant for Nebula Cloud Storage. The user is asking a question about their file: "${file.title}" (${file.name}).
+            You are an AI assistant for CloudSense Cloud Storage. The user is asking a question about their file: "${file.title}" (${file.name}).
             
             Document Content:
             ${file.full_text || file.summary} 

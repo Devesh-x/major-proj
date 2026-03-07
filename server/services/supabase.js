@@ -150,7 +150,7 @@ const db = {
     auth: {
         getUser: async () => {
             if (!isLocal) return cloudClient.auth.getUser();
-            return { data: { user: { id: 'local-user-123', email: 'local@nebula.ai' } }, error: null };
+            return { data: { user: { id: 'local-user-123', email: 'local@cloudsense.ai' } }, error: null };
         }
     }
 };

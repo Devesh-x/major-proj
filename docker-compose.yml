@@ -6,7 +6,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: nebula_db
+      POSTGRES_DB: cloudsense_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:

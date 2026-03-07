@@ -15,13 +15,13 @@ const testFiles = [
     },
     {
         name: 'Work_Report.txt',
-        content: 'Q4 Financial goals for the Nebula team. We reached 200% growth in cloud storage usage.',
+        content: 'Q4 Financial goals for the CloudSense team. We reached 200% growth in cloud storage usage.',
         mimetype: 'text/plain'
     }
 ];
 
 async function runBenchmarks() {
-    console.log('🚀 Starting Nebula AI Benchmarking Suite...\n');
+    console.log('🚀 Starting CloudSense AI Benchmarking Suite...\n');
 
     for (const f of testFiles) {
         console.log(`--- Testing: ${f.name} ---`);

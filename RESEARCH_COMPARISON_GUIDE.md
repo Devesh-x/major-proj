@@ -1,4 +1,4 @@
-# 📊 Nebula Cloud — Research Comparison Guide
+# 📊 CloudSense — Research Comparison Guide
 
 > A guide explaining how we benchmark and compare our AI-powered cloud storage system against traditional systems. Share this with anyone working on the research paper.
 
@@ -6,13 +6,13 @@
 
 ## 🔬 What We Are Comparing
 
-We compare **Nebula Cloud** (our system) against 3 baselines:
+We compare **CloudSense** (our system) against 3 baselines:
 
 | System | Search | AI | PII Detection | Duplicate Check |
 |---|---|---|---|---|
 | Traditional SQL Storage | Keyword only | ❌ | ❌ | ❌ |
 | Google Drive / Dropbox | Keyword only | Limited | ❌ | Basic |
-| **Nebula Cloud (ours)** | **Fuzzy + Semantic** | **✅ Gemini** | **✅ Auto** | **✅ Hash** |
+| **CloudSense (ours)** | **Fuzzy + Semantic** | **✅ Advanced AI** | **✅ Auto** | **✅ Hash** |
 
 ---
 

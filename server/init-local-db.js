@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const client = new Client({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/nebula_db'
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/cloudsense_db'
 });
 
 async function init() {

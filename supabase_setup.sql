@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS file_metadata (
   hash TEXT UNIQUE, -- SHA-256 content hash for duplicate detection
   embedding vector(768), -- Dimension for text-embedding-004 is 768
   user_id UUID REFERENCES auth.users(id), -- Link to Supabase Auth
-  metrics JSONB -- To store timing data for research (Comparison 5)
+  full_text TEXT, -- Extracted text for RAG (Talk to Your File)
+  metrics JSONB, -- To store timing data for research (Comparison 5)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for Performance
@@ -45,6 +47,7 @@ RETURNS TABLE (
   tags TEXT[],
   is_pii BOOLEAN,
   pii_type TEXT,
+  full_text TEXT,
   created_at TIMESTAMP WITH TIME ZONE,
   similarity FLOAT
 )
@@ -64,6 +67,7 @@ BEGIN
     file_metadata.tags,
     file_metadata.is_pii,
     file_metadata.pii_type,
+    file_metadata.full_text,
     file_metadata.created_at,
     1 - (file_metadata.embedding <=> query_embedding) AS similarity
   FROM file_metadata

@@ -13,6 +13,8 @@ const { chatWithDocument } = require('./services/standalone_chat');
 const supabase = require('./services/supabase');
 const crypto = require('crypto');
 
+const upload = multer({ storage: multer.memoryStorage() });
+
 // Middleware
 app.use(cors());
 app.use(express.json());

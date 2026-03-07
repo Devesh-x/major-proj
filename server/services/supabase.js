@@ -13,10 +13,18 @@ const getLocalData = () => {
 };
 const saveLocalData = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
 
-// Cloud Supabase
+// Cloud Supabase (Only init if credentials look valid to avoid crash in Local Mode)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const cloudClient = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+let cloudClient = null;
+
+if (supabaseUrl && supabaseUrl.startsWith('http') && supabaseKey) {
+    try {
+        cloudClient = createClient(supabaseUrl, supabaseKey);
+    } catch (e) {
+        console.warn('Failed to init cloud Supabase client:', e.message);
+    }
+}
 
 // Vector Similarity Helper (Cosine Similarity)
 const dotProduct = (a, b) => a.reduce((sum, val, i) => sum + val * b[i], 0);

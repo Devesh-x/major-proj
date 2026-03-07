@@ -119,7 +119,7 @@ User Uploads File
          │
          ▼
 ┌─────────────────────────┐
-│  text-embedding-004      │  → 1536-dim vector embedding
+│  text-embedding-004      │  → 768-dim vector embedding
 └────────┬────────────────┘
          │
          ▼

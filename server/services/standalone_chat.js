@@ -11,36 +11,32 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function chatWithDocument(fileId, userQuery, userId) {
     try {
-        // 1. Fetch file metadata and summary
+        // 1. Fetch file context
         const { data: file, error } = await supabase
             .from('file_metadata')
-            .select('title, summary, storage_path, name')
+            .select('title, summary, full_text, name')
             .eq('id', fileId)
             .eq('user_id', userId)
             .single();
 
         if (error || !file) throw new Error('File not found or access denied');
 
-        // 2. Ideally, we would fetch the full text from storage here.
-        // For this "standout" feature demo, we'll use the AI-generated summary 
-        // and file context to answer, or fetch a chunk if needed.
-        // In a full implementation, we'd read the file from Supabase Storage.
-
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
             You are an AI assistant for Nebula Cloud Storage. The user is asking a question about their file: "${file.title}" (${file.name}).
             
-            File Context/Summary:
-            ${file.summary}
+            Document Content:
+            ${file.full_text || file.summary} 
 
             User Question:
             "${userQuery}"
 
             Instructions:
-            - Answer the question based on the provided file context.
-            - If the answer isn't in the summary, acknowledge that you are analyzing based on the summary provided during upload.
-            - Be concise and professional.
+            - Answer accurately based on the Document Content provided.
+            - If the content is missing, use the summary.
+            - If the answer is not in the content, say you don't have enough information from the file.
+            - Be helpful, concise, and professional.
         `;
 
         const result = await model.generateContent(prompt);

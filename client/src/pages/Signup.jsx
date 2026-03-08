@@ -8,7 +8,8 @@ const PERKS = ['1 GB free storage', 'AI auto-tagging', 'Semantic search', 'PII p
 
 export default function Signup() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ name: '', email: '', password: '' });
+    const [form, setForm] = useState({ name: '', bio: '', email: '', password: '' });
+    const { name, bio, email, password } = form;
     const [show, setShow] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -57,7 +58,7 @@ export default function Signup() {
         }
     };
 
-    const strength = password.length === 0 ? 0 : password.length < 4 ? 1 : password.length < 6 ? 2 : password.length < 10 ? 3 : 4;
+    const strength = form.password.length === 0 ? 0 : form.password.length < 4 ? 1 : form.password.length < 6 ? 2 : form.password.length < 10 ? 3 : 4;
     const strengthColor = ['transparent', '#ef4444', '#f59e0b', '#3b82f6', '#22c55e'][strength];
 
     return (
@@ -82,13 +83,13 @@ export default function Signup() {
                         {/* Name */}
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#000', marginBottom: 8, marginLeft: 4 }}>Full Name</label>
-                            <input value={name} onChange={e => setName(e.target.value)} placeholder="Devesh" required
+                            <input name="name" value={name} onChange={handleChange} placeholder="Devesh" required
                                 style={{ width: '100%', padding: '14px 18px', borderRadius: 16, border: '1px solid rgba(0,0,0,0.1)', background: '#fafafa', color: '#000', fontSize: '0.95rem' }} />
                         </div>
                         {/* Profession */}
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#000', marginBottom: 8, marginLeft: 4 }}>Profession</label>
-                            <input value={bio} onChange={e => setBio(e.target.value)} placeholder="Student"
+                            <input name="bio" value={bio} onChange={handleChange} placeholder="Student"
                                 style={{ width: '100%', padding: '14px 18px', borderRadius: 16, border: '1px solid rgba(0,0,0,0.1)', background: '#fafafa', color: '#000', fontSize: '0.95rem' }} />
                         </div>
                     </div>
@@ -96,7 +97,7 @@ export default function Signup() {
                     {/* Email */}
                     <div style={{ marginBottom: 20 }}>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#000', marginBottom: 8, marginLeft: 4 }}>Email Address</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" required
+                        <input name="email" type="email" value={email} onChange={handleChange} placeholder="name@company.com" required
                             style={{ width: '100%', padding: '14px 18px', borderRadius: 16, border: '1px solid rgba(0,0,0,0.1)', background: '#fafafa', color: '#000', fontSize: '0.95rem' }} />
                     </div>
 
@@ -104,7 +105,7 @@ export default function Signup() {
                     <div style={{ marginBottom: 32 }}>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#000', marginBottom: 8, marginLeft: 4 }}>Password</label>
                         <div style={{ position: 'relative' }}>
-                            <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a strong password" required
+                            <input name="password" type={show ? 'text' : 'password'} value={password} onChange={handleChange} placeholder="Create a strong password" required
                                 style={{ width: '100%', padding: '14px 18px', borderRadius: 16, border: '1px solid rgba(0,0,0,0.1)', background: '#fafafa', color: '#000', fontSize: '0.95rem', paddingRight: 44 }} />
                             <button type="button" onClick={() => setShow(p => !p)}
                                 style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex' }}>

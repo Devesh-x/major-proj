@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BackgroundCells } from "@/components/ui/background-ripple-effect";
+import { HeroPill } from "@/components/ui/hero-pill";
 
 const WORDS = ["intelligent.", "private.", "blazing-fast.", "automated.", "seamless."];
 
@@ -42,17 +43,13 @@ export function Hero() {
             }}>
 
                 {/* Pill badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
-                    style={{ marginBottom: 40 }}
-                >
-                    <span className="pill">
-                        <Sparkles size={11} />
-                        Powered by Advanced AI
-                    </span>
-                </motion.div>
+                <div style={{ marginBottom: 40 }}>
+                    <HeroPill
+                        href="#how-it-works"
+                        label="Powered by Advanced AI"
+                        icon={Sparkles}
+                    />
+                </div>
 
                 {/* ── Two-line headline ── */}
                 <motion.div

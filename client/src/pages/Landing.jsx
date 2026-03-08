@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Cloud, Zap, Shield, Search, ArrowRight, CheckCircle, Brain, Lock, Menu, X } from 'lucide-react';
 import { Hero } from "@/components/ui/animated-hero";
 import CloudSenseTimeline from "@/components/ui/timeline";
+import { CreativePricing } from "@/components/ui/creative-pricing";
 
 const FEATURES = [
     {
@@ -31,10 +32,53 @@ const FEATURES = [
     },
 ];
 
+const PRICING_TIERS = [
+    {
+        name: "Starter",
+        icon: <Cloud className="w-6 h-6" />,
+        price: 0,
+        description: "Perfect for students & casual users",
+        color: "zinc",
+        features: [
+            "1GB Secure Storage",
+            "Basic AI Auto-Tagging",
+            "Keyword Search",
+            "Community Support",
+        ],
+    },
+    {
+        name: "Pro",
+        icon: <Zap className="w-6 h-6" />,
+        price: 19,
+        description: "For professionals needing super-powers",
+        color: "indigo",
+        features: [
+            "50GB Secure Storage",
+            "Advanced Semantic Search",
+            "PII Leak Protection",
+            "Priority AI Processing",
+        ],
+        popular: true,
+    },
+    {
+        name: "Business",
+        icon: <Shield className="w-6 h-6" />,
+        price: 99,
+        description: "For teams with high-security needs",
+        color: "purple",
+        features: [
+            "Unlimited Smart Storage",
+            "Custom AI Indexing",
+            "Full API Access",
+            "24/7 Dedicated Support",
+        ],
+    },
+];
+
 const NAV_LINKS = [
     { label: 'How It Works', href: '#how-it-works' },
     { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#' },
+    { label: 'Pricing', href: '#pricing' },
 ];
 
 export default function Landing() {
@@ -130,6 +174,9 @@ export default function Landing() {
             <section id="how-it-works">
                 <CloudSenseTimeline />
             </section>
+
+            {/* ── Pricing ── */}
+            <CreativePricing tiers={PRICING_TIERS} />
 
 
             {/* ── Features ── */}

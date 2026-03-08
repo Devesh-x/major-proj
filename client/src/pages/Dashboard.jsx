@@ -8,6 +8,8 @@ import {
     HardDrive, Zap, TrendingUp
 } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const NAV = [
     { path: '/dashboard', icon: LayoutGrid, label: 'All Files' },
     { path: '#insights', icon: Brain, label: 'AI Insights' },
@@ -86,7 +88,7 @@ export default function Dashboard() {
     const fetchFiles = async () => {
         try {
             const token = localStorage.getItem('sb-token');
-            const res = await fetch('http://localhost:5000/api/search?query=&mode=fuzzy', {
+            const res = await fetch(`${API_URL}/api/search?query=&mode=fuzzy`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -106,7 +108,7 @@ export default function Dashboard() {
         setSummarizingFolder(true);
         try {
             const token = localStorage.getItem('sb-token');
-            const res = await fetch('http://localhost:5000/api/summarize-category', {
+            const res = await fetch(`${API_URL}/api/summarize-category`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ category: activeCategory })
@@ -125,7 +127,7 @@ export default function Dashboard() {
         formData.append('file', file);
         try {
             const token = localStorage.getItem('sb-token');
-            const res = await fetch('http://localhost:5000/api/upload', {
+            const res = await fetch(`${API_URL}/api/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -153,7 +155,7 @@ export default function Dashboard() {
         if (!confirm('Delete this file?')) return;
         try {
             const token = localStorage.getItem('sb-token');
-            await fetch(`http://localhost:5000/api/delete-file/${fileId}`, {
+            await fetch(`${API_URL}/api/delete-file/${fileId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -171,7 +173,7 @@ export default function Dashboard() {
         setChatLoading(true);
         try {
             const token = localStorage.getItem('sb-token');
-            const res = await fetch('http://localhost:5000/api/chat', {
+            const res = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ fileId: selectedFile.id, query: newMsg.content })

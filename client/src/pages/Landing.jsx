@@ -6,6 +6,8 @@ import CloudSenseTimeline from "@/components/ui/timeline";
 
 const FEATURES = [
     {
+        icon: Brain,
+        title: 'AI Auto-Analysis',
         desc: 'Every file is automatically analyzed, tagged, and summarized using our advanced AI within seconds of upload.',
         tag: 'Intelligent AI',
     },

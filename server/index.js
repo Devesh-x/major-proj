@@ -66,14 +66,29 @@ app.post('/api/upload', authenticate, upload.single('file'), async (req, res) =>
 
     // 2. Analyze file with Gemini - Timing
     const a0 = Date.now();
-    const analysis = await analyzeFile(file);
+    let analysis = null;
+    try {
+      analysis = await analyzeFile(file);
+    } catch (e) {
+      console.error('Core Gemini call failed unexpectedly:', e);
+      analysis = {
+        title: file.originalname,
+        summary: 'Error processing file.',
+        tags: ['Error'],
+        category: 'Uncategorized',
+        isPII: false,
+        textContent: ''
+      };
+    }
     const analysisTime = Date.now() - a0;
 
     // 3. Generate Embedding for Semantic Search - Timing
     const v0 = Date.now();
     let embedding = null;
     try {
-      embedding = await generateEmbedding(`${analysis.title} ${analysis.summary} ${analysis.tags.join(' ')}`);
+      if (analysis.textContent) {
+        embedding = await generateEmbedding(`${analysis.title} ${analysis.summary} ${analysis.tags.join(' ')}`);
+      }
     } catch (e) {
       console.warn('Embedding generation failed, skipping...');
     }
@@ -219,8 +234,7 @@ app.post('/api/update-tags', authenticate, async (req, res) => {
 app.get('/api/search', authenticate, async (req, res) => {
   const tStart = Date.now();
   try {
-    const { query, mode = 'fuzzy' } = req.query;
-    if (!query) return res.status(400).json({ error: 'Query is required' });
+    const { query = '', mode = 'fuzzy' } = req.query;
 
     let results = [];
 
@@ -235,12 +249,16 @@ app.get('/api/search', authenticate, async (req, res) => {
       results = data;
     } else {
       // Fuzzy Search using pg_trgm (via ILIKE with our new GIST indexes)
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from('file_metadata')
         .select('*')
-        .eq('user_id', req.user.id)
-        .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
-        .order('created_at', { ascending: false });
+        .eq('user_id', req.user.id);
+
+      if (query) {
+        queryBuilder = queryBuilder.or(`title.ilike.%${query}%,summary.ilike.%${query}%`);
+      }
+
+      const { data, error } = await queryBuilder.order('created_at', { ascending: false });
 
       if (error) throw error;
       results = data;

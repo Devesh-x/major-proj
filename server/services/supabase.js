@@ -39,44 +39,46 @@ const db = {
         if (!isLocal) return cloudClient.from(table);
 
         return {
-            select: () => ({
-                eq: (col, val) => ({
-                    eq: (c2, v2) => ({
-                        single: async () => {
-                            const { files } = getLocalData();
-                            const f = files.find(x => x[col] === val && x[c2] === v2);
-                            return { data: f || null, error: null };
-                        },
-                        order: async (sort, { ascending }) => {
-                            const { files } = getLocalData();
-                            const results = files.filter(x => x[col] === val && x[c2] === v2)
-                                .sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
-                            return { data: results, error: null };
-                        }
-                    }),
+            select: () => {
+                let filters = [];
+                let sortCol = 'created_at';
+                let sortAsc = false;
+
+                const chain = {
+                    eq: (col, val) => {
+                        filters.push(f => f[col] === val);
+                        return chain;
+                    },
+                    or: (filterStr) => {
+                        const query = filterStr.split(',')[0].split('.').pop().replace(/%/g, '').toLowerCase();
+                        filters.push(f =>
+                            f.title?.toLowerCase().includes(query) ||
+                            f.summary?.toLowerCase().includes(query) ||
+                            f.category?.toLowerCase().includes(query) ||
+                            (f.tags && f.tags.some(t => t.toLowerCase().includes(query))) ||
+                            f.full_text?.toLowerCase().includes(query)
+                        );
+                        return chain;
+                    },
+                    order: (col, { ascending }) => {
+                        sortCol = col;
+                        sortAsc = ascending;
+                        return chain;
+                    },
                     single: async () => {
                         const { files } = getLocalData();
-                        const f = files.find(x => x[col] === val);
-                        return { data: f || null, error: null };
-                    }
-                }),
-                or: (filterStr) => ({
-                    order: async (sort, { ascending }) => {
+                        const results = files.filter(f => filters.every(fn => fn(f)));
+                        return { data: results[0] || null, error: null };
+                    },
+                    then: async (resolve) => {
                         const { files } = getLocalData();
-                        const query = filterStr.split(',')[0].split('.').pop().replace(/%/g, '').toLowerCase();
-                        const results = files.filter(f =>
-                            f.title?.toLowerCase().includes(query) ||
-                            f.summary?.toLowerCase().includes(query)
-                        ).sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
-                        return { data: results, error: null };
+                        const results = files.filter(f => filters.every(fn => fn(f)))
+                            .sort((a, b) => (sortAsc ? a[sortCol] > b[sortCol] : a[sortCol] < b[sortCol]) ? 1 : -1);
+                        resolve({ data: results, error: null });
                     }
-                }),
-                order: async (sort, { ascending }) => {
-                    const { files } = getLocalData();
-                    const results = files.sort((a, b) => (ascending ? a[sort] > b[sort] : a[sort] < b[sort]) ? 1 : -1);
-                    return { data: results, error: null };
-                }
-            }),
+                };
+                return chain;
+            },
             insert: (rows) => ({
                 select: async () => {
                     const data = getLocalData();

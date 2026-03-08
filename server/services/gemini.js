@@ -1,8 +1,49 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
+const keyManager = require('../utils/geminiKeys');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+/**
+ * Semi-intelligent fallback for file analysis when Gemini API is unavailable.
+ */
+function getMockAnalysis(file, textContent) {
+    const name = file.originalname?.toLowerCase() || "";
+    const text = textContent?.toLowerCase() || "";
+
+    let category = "General";
+    let tags = ["Upload"];
+    let isPII = false;
+    let piiType = null;
+
+    // Detect Category
+    if (name.includes("invoice") || name.includes("receipt") || text.includes("amount") || text.includes("billing")) {
+        category = "Finance";
+        tags.push("invoice", "payment");
+    } else if (name.includes("resume") || name.includes("cv") || text.includes("experience") || text.includes("education")) {
+        category = "Work";
+        tags.push("career", "resume");
+    } else if (name.includes("passport") || name.includes("id") || name.includes("license") || text.includes("identity")) {
+        category = "Identity";
+        isPII = true;
+        piiType = "Government ID";
+        tags.push("legal", "sensitive");
+    } else if (name.includes("contract") || name.includes("agreement") || text.includes("terms")) {
+        category = "Legal";
+        tags.push("legal", "agreement");
+    } else if (file.mimetype?.startsWith("image")) {
+        category = "Media";
+        tags.push("image");
+    }
+
+    return {
+        tags: [...new Set(tags)],
+        summary: `Local analysis of "${file.originalname}". Full AI parsing throttled.`,
+        isPII,
+        piiType,
+        title: file.originalname.split(".")[0],
+        category,
+        textContent
+    };
+}
 
 /**
  * Parses file content and uses Gemini to generate tags, detect PII, and summarize content.
@@ -10,48 +51,51 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 async function analyzeFile(file) {
     let textContent = '';
 
-    // Extract text based on file type
-    if (file.mimetype === 'application/pdf') {
-        const data = await pdf(file.buffer);
-        textContent = data.text;
-    } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const data = await mammoth.extractRawText({ buffer: file.buffer });
-        textContent = data.value;
-    } else if (file.mimetype.startsWith('text/')) {
-        textContent = file.buffer.toString('utf8');
-    } else {
-        // For images or unknown types, we'd ideally use multimodal Gemini, 
-        // but for now let's handle text-based docs primarily or use image analysis.
-        textContent = `[Image/Binary File: ${file.originalname}]`;
+    try {
+        if (file.mimetype === 'application/pdf') {
+            const data = await pdf(file.buffer);
+            textContent = data.text;
+        } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            const data = await mammoth.extractRawText({ buffer: file.buffer });
+            textContent = data.value;
+        } else if (file.mimetype.startsWith('text/')) {
+            textContent = file.buffer.toString('utf8');
+        } else {
+            textContent = `[Image/Binary File: ${file.originalname}]`;
+        }
+    } catch (e) {
+        console.warn('Text extraction failed:', e);
+        textContent = `[Parsing Failed: ${file.originalname}]`;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const prompt = `
-    Analyze the following document content and provide the following in JSON format:
-    1. "tags": (Array of strings) Relevant keywords for this document.
-    2. "summary": (String) A brief 1-2 sentence summary.
-    3. "isPII": (Boolean) Does this document look like a sensitive ID proof (Passport, National ID, Social Security, PAN, etc.)?
-    4. "piiType": (String or null) If isPII is true, what type of ID is it?
-    5. "title": (String) A descriptive title for the file.
-    6. "category": (String) A single high-level category for organization (e.g., 'Finance', 'Work', 'Personal', 'Identity', 'Legal').
-
-    Document Content:
-    ${textContent.substring(0, 10000)} 
-  `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Clean JSON response (handled carefully because AI might wrap it in markdown block)
     try {
-        const jsonStr = text.match(/\{[\s\S]*\}/)[0];
-        const result = JSON.parse(jsonStr);
-        return { ...result, textContent }; // Return text content for storage
+        const prompt = `
+            Analyze the following document content and provide the following in JSON format:
+            1. "tags": (Array of strings) Relevant keywords for this document.
+            2. "summary": (String) A brief 1-2 sentence summary.
+            3. "isPII": (Boolean) Does this document look like a sensitive ID proof (Passport, National ID, Social Security, PAN, etc.)?
+            4. "piiType": (String or null) If isPII is true, what type of ID is it?
+            5. "title": (String) A descriptive title for the file.
+            6. "category": (String) A single high-level category for organization (e.g., 'Finance', 'Work', 'Personal', 'Identity', 'Legal').
+
+            Document Content:
+            ${textContent.substring(0, 10000)} 
+        `;
+
+        // Wrap the Gemini call inside the key manager failover
+        return await keyManager.executeWithFallback(async (genAI_client) => {
+            const model = genAI_client.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+
+            const jsonStr = text.match(/\{[\s\S]*\}/)[0];
+            const resObj = JSON.parse(jsonStr);
+            return { ...resObj, textContent };
+        });
     } catch (e) {
-        console.error('Failed to parse Gemini response:', text);
-        return { tags: ['general'], summary: 'Could not analyze content', isPII: false, textContent };
+        console.error('All Gemini keys failed or parsing failed, using Smart Fallback:', e.message);
+        return getMockAnalysis(file, textContent);
     }
 }
 
@@ -59,9 +103,18 @@ async function analyzeFile(file) {
  * Generates an embedding for the document content for semantic search.
  */
 async function generateEmbedding(text) {
-    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-    const result = await model.embedContent(text.substring(0, 8000));
-    return result.embedding.values;
+    try {
+        return await keyManager.executeWithFallback(async (genAI_client) => {
+            const model = genAI_client.getGenerativeModel({ model: "gemini-embedding-001" });
+            const result = await model.embedContent(text.substring(0, 8000));
+            return result.embedding.values;
+        });
+    } catch (e) {
+        console.warn('Embedding generation failed (all API keys busy).');
+        return null;
+    }
 }
+
+module.exports = { analyzeFile, generateEmbedding };
 
 module.exports = { analyzeFile, generateEmbedding };

@@ -1,171 +1,450 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACCENT = {
-    zinc: "#3f3f46",
-    indigo: "#4f46e5",
-    purple: "#7c3aed",
-    amber: "#d97706",
-    blue: "#2563eb",
+    zinc: { bg: "#f4f4f5", border: "#d4d4d8", check: "#09090b" },
+    dark: { bg: "#f4f4f5", border: "#d4d4d8", check: "#09090b" },
 };
 
 function CreativePricing({
     tag = "Simple Pricing",
     title = "Cloud storage with an AI brain",
     description = "Intelligent, private, and beautifully simple — starting at $0",
-    tiers,
+    tiers = [
+        {
+            name: "Starter",
+            color: "zinc",
+            description: "Perfect for students & casual users",
+            price: 0,
+            features: [
+                "1GB Secure Storage",
+                "Basic AI Auto-Tagging",
+                "Keyword Search",
+                "Community Support",
+            ],
+        },
+        {
+            name: "Pro",
+            color: "dark",
+            popular: true,
+            description: "For professionals needing super-powers",
+            price: 19,
+            features: [
+                "50GB Secure Storage",
+                "Advanced Semantic Search",
+                "PII Leak Protection",
+                "Priority AI Processing",
+            ],
+        },
+        {
+            name: "Business",
+            color: "zinc",
+            description: "For teams with high-security needs",
+            price: 99,
+            features: [
+                "Unlimited Smart Storage",
+                "Custom AI Indexing",
+                "Full API Access",
+                "24/7 Dedicated Support",
+            ],
+        },
+    ],
 }) {
+    const sectionRef = useRef(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+            { threshold: 0.15 }
+        );
+        if (sectionRef.current) observer.observe(sectionRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <section
-            id="pricing"
-            className="w-full bg-white pt-24 pb-20 border-t-2 border-zinc-100 flex flex-col items-center"
-        >
-            <div className="w-full max-w-5xl mx-auto px-8 flex flex-col items-center">
+        <>
+            <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-                {/* ─── Header ─────────────────────────────────────────── */}
-                <div className="text-center mb-16 flex flex-col items-center gap-3">
-                    <p
-                        className="text-indigo-500 font-bold text-[10px] tracking-[0.3em] uppercase"
-                        style={{ fontFamily: "'Syne', sans-serif" }}
-                    >
-                        {tag}
-                    </p>
-                    <h2
-                        className="text-4xl md:text-5xl font-extrabold text-zinc-900 tracking-tight leading-tight"
-                        style={{ fontFamily: "'Syne', sans-serif" }}
-                    >
-                        {title}
-                    </h2>
-                    <p
-                        className="text-zinc-500 text-base font-medium leading-relaxed max-w-sm"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                        {description}
-                    </p>
-                </div>
+        .cp-wrap * { box-sizing: border-box; }
 
-                {/* ─── Cards ──────────────────────────────────────────── */}
-                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-7">
-                    {tiers.map((tier, index) => {
-                        const isPopular = tier.popular;
-                        const color = ACCENT[tier.color] ?? ACCENT.indigo;
-                        const tilt = ["rotate-[-0.3deg]", "rotate-[0.4deg]", "rotate-[-0.2deg]"][index] ?? "";
+        /* ── Header animations ── */
+        .cp-header-tag {
+          opacity: 0;
+          transform: translateY(14px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .cp-header-title {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s;
+        }
+        .cp-header-desc {
+          opacity: 0;
+          transform: translateY(14px);
+          transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+        }
+        .cp-visible .cp-header-tag,
+        .cp-visible .cp-header-title,
+        .cp-visible .cp-header-desc {
+          opacity: 1;
+          transform: translateY(0);
+        }
 
-                        return (
-                            <div key={tier.name} className={cn("relative group", tilt)}>
+        /* ── Card animations ── */
+        .cp-card {
+          opacity: 0;
+          transform: translateY(32px);
+          transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 0.24s ease;
+        }
+        .cp-card:nth-child(1) { transition-delay: 0.15s; }
+        .cp-card:nth-child(2) { transition-delay: 0.28s; }
+        .cp-card:nth-child(3) { transition-delay: 0.41s; }
 
-                                {/* offset shadow */}
-                                <div className="absolute inset-0 rounded-3xl border-2 border-zinc-900 translate-x-[7px] translate-y-[7px] transition-transform duration-500 group-hover:translate-x-[11px] group-hover:translate-y-[11px]" />
+        .cp-visible .cp-card {
+          opacity: 1;
+          transform: translateY(0);
+        }
 
-                                {/* card */}
-                                <div className="relative rounded-3xl border-2 border-zinc-900 bg-white flex flex-col items-center text-center px-8 pt-10 pb-8 gap-0 transition-transform duration-500 group-hover:-translate-x-[2px] group-hover:-translate-y-[2px]">
+        .cp-card:hover {
+          transform: translateY(-7px) !important;
+          box-shadow: 0 22px 44px -10px rgba(0,0,0,0.14) !important;
+        }
+        .cp-card.popular:hover {
+          transform: translateY(-9px) !important;
+          box-shadow: 0 28px 52px -10px rgba(0,0,0,0.22) !important;
+        }
 
-                                    {/* ── Popular badge ── */}
+        /* ── Buttons ── */
+        .cp-btn {
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          transition: background 0.16s ease, color 0.16s ease,
+                      transform 0.16s ease, box-shadow 0.16s ease;
+          outline: none;
+        }
+        .cp-btn:hover  { transform: translateY(-1px); }
+        .cp-btn:active { transform: translateY(0); }
+
+        .cp-btn-default:hover {
+          background: #09090b !important;
+          color: #fff !important;
+          border-color: #09090b !important;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        }
+        .cp-btn-popular:hover {
+          background: #27272a !important;
+          border-color: #27272a !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+        }
+
+        /* ── Features ── */
+        .cp-feat {
+          animation: cp-in 0.32s ease forwards;
+          opacity: 0;
+        }
+        @keyframes cp-in {
+          from { opacity: 0; transform: translateX(-5px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ── Footer ── */
+        .cp-footer {
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.5s ease 0.6s, transform 0.5s ease 0.6s;
+        }
+        .cp-visible .cp-footer {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
+
+            <section
+                id="pricing"
+                ref={sectionRef}
+                className={cn("cp-wrap", visible && "cp-visible")}
+                style={{
+                    width: "100%",
+                    background: "#ffffff",
+                    padding: "88px 32px 96px",
+                    borderTop: "1px solid #e4e4e7",
+                    fontFamily: "'Inter', sans-serif",
+                    scrollMarginTop: "80px",
+                }}
+            >
+                <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+
+                    {/* ── Header ── */}
+                    <div style={{ textAlign: "center", marginBottom: 60 }}>
+                        <span
+                            className="cp-header-tag"
+                            style={{
+                                display: "inline-block",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                letterSpacing: "0.18em",
+                                textTransform: "uppercase",
+                                color: "#09090b",
+                                marginBottom: 16,
+                                padding: "5px 14px",
+                                background: "#f4f4f5",
+                                borderRadius: 999,
+                                border: "1px solid #d4d4d8",
+                            }}
+                        >
+                            {tag}
+                        </span>
+
+                        <h2
+                            className="cp-header-title"
+                            style={{
+                                display: "block",
+                                fontSize: "clamp(1.85rem, 4vw, 2.75rem)",
+                                fontWeight: 800,
+                                color: "#09090b",
+                                letterSpacing: "-0.03em",
+                                lineHeight: 1.15,
+                                margin: "0 0 14px",
+                            }}
+                        >
+                            {title}
+                        </h2>
+
+                        <p
+                            className="cp-header-desc"
+                            style={{
+                                fontSize: 15,
+                                color: "#71717a",
+                                fontWeight: 400,
+                                maxWidth: 390,
+                                margin: "0 auto",
+                                lineHeight: 1.7,
+                            }}
+                        >
+                            {description}
+                        </p>
+                    </div>
+
+                    {/* ── Cards ── */}
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: 20,
+                        alignItems: "stretch",
+                    }}>
+                        {tiers.map((tier) => {
+                            const accent = ACCENT[tier.color] ?? ACCENT.zinc;
+                            const isPopular = !!tier.popular;
+
+                            return (
+                                <div
+                                    key={tier.name}
+                                    className={cn("cp-card", isPopular && "popular")}
+                                    style={{
+                                        position: "relative",
+                                        borderRadius: 18,
+                                        border: isPopular ? "2px solid #09090b" : "1.5px solid #e4e4e7",
+                                        background: isPopular ? "#09090b" : "#ffffff",
+                                        padding: "34px 26px 26px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        boxShadow: isPopular
+                                            ? "0 10px 32px -6px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.08)"
+                                            : "0 2px 8px rgba(0,0,0,0.05)",
+                                    }}
+                                >
+                                    {/* Popular badge */}
                                     {isPopular && (
-                                        <span
-                                            className="absolute -top-4 right-6 rotate-3 inline-block bg-amber-400 text-zinc-900 font-black text-[9px] px-3 py-1.5 rounded-full border-2 border-zinc-900 uppercase tracking-widest shadow-sm"
-                                            style={{ fontFamily: "'Syne', sans-serif" }}
-                                        >
-                                            Popular
-                                        </span>
+                                        <div style={{
+                                            position: "absolute",
+                                            top: -13,
+                                            left: "50%",
+                                            transform: "translateX(-50%)",
+                                            background: "#ffffff",
+                                            color: "#09090b",
+                                            fontSize: 10,
+                                            fontWeight: 700,
+                                            letterSpacing: "0.16em",
+                                            textTransform: "uppercase",
+                                            padding: "4px 16px",
+                                            borderRadius: 999,
+                                            whiteSpace: "nowrap",
+                                            border: "1.5px solid #09090b",
+                                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                                        }}>
+                                            Most Popular
+                                        </div>
                                     )}
 
-                                    {/* ── Name ── */}
-                                    <h3
-                                        className="text-2xl font-black text-zinc-900 tracking-tight leading-none mb-2"
-                                        style={{ fontFamily: "'Syne', sans-serif" }}
-                                    >
+                                    {/* Tier label */}
+                                    <p style={{
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        letterSpacing: "0.1em",
+                                        textTransform: "uppercase",
+                                        color: isPopular ? "#a1a1aa" : "#a1a1aa",
+                                        margin: "0 0 6px",
+                                    }}>
                                         {tier.name}
+                                    </p>
+
+                                    {/* Price */}
+                                    <h3 style={{
+                                        fontSize: 22,
+                                        fontWeight: 700,
+                                        color: isPopular ? "#ffffff" : "#09090b",
+                                        margin: "0 0 6px",
+                                        letterSpacing: "-0.025em",
+                                        lineHeight: 1.2,
+                                    }}>
+                                        {tier.price === 0 ? "Free" : `$${tier.price}`}
+                                        {tier.price > 0 && (
+                                            <span style={{
+                                                fontSize: 14,
+                                                fontWeight: 500,
+                                                color: isPopular ? "#71717a" : "#a1a1aa",
+                                                letterSpacing: 0,
+                                            }}>
+                                                {" "}/mo
+                                            </span>
+                                        )}
                                     </h3>
 
-                                    {/* ── Description ── */}
-                                    <p
-                                        className="text-zinc-400 text-[13px] font-medium leading-snug max-w-[180px] mb-7"
-                                        style={{ fontFamily: "'Inter', sans-serif" }}
-                                    >
+                                    {/* Description */}
+                                    <p style={{
+                                        fontSize: 13,
+                                        color: isPopular ? "#71717a" : "#a1a1aa",
+                                        fontWeight: 400,
+                                        margin: "0 0 14px",
+                                        lineHeight: 1.55,
+                                        minHeight: 34,
+                                    }}>
                                         {tier.description}
                                     </p>
 
-                                    {/* ── Divider ── */}
-                                    <div className="w-full h-px bg-zinc-100 mb-7" />
+                                    {/* Free forever badge */}
+                                    {tier.price === 0 && (
+                                        <span style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                            marginBottom: 16,
+                                            fontSize: 10.5,
+                                            fontWeight: 600,
+                                            color: "#3f3f46",
+                                            background: "#f4f4f5",
+                                            border: "1px solid #d4d4d8",
+                                            padding: "3px 10px",
+                                            borderRadius: 999,
+                                            letterSpacing: "0.05em",
+                                            textTransform: "uppercase",
+                                            width: "fit-content",
+                                        }}>
+                                            <span style={{ fontSize: 7 }}>●</span> Free forever
+                                        </span>
+                                    )}
 
-                                    {/* ── Price ── */}
-                                    <div className="flex flex-col items-center mb-9">
-                                        <div className="flex items-baseline gap-1">
-                                            <span
-                                                className="text-5xl font-black tracking-tighter text-zinc-900 leading-none"
-                                                style={{ fontFamily: "'Syne', sans-serif" }}
-                                            >
-                                                {tier.price === 0 ? "Free" : `$${tier.price}`}
-                                            </span>
-                                            {tier.price > 0 && (
-                                                <span
-                                                    className="text-zinc-400 text-sm font-semibold"
-                                                    style={{ fontFamily: "'Inter', sans-serif" }}
-                                                >
-                                                    /mo
-                                                </span>
-                                            )}
-                                        </div>
-                                        {tier.price === 0 && (
-                                            <span
-                                                className="mt-2 text-emerald-600 text-[10px] font-black uppercase tracking-widest"
-                                                style={{ fontFamily: "'Syne', sans-serif" }}
-                                            >
-                                                ● Free Forever
-                                            </span>
-                                        )}
-                                    </div>
+                                    {/* Divider */}
+                                    <div style={{
+                                        height: 1,
+                                        background: isPopular ? "#27272a" : "#f4f4f5",
+                                        marginBottom: 20,
+                                    }} />
 
-                                    {/* ── Features ── */}
-                                    <ul
-                                        className="w-full flex flex-col gap-5 text-left mb-10"
-                                        style={{ fontFamily: "'Inter', sans-serif" }}
-                                    >
-                                        {tier.features.map((feature) => (
-                                            <li key={feature} className="flex items-start gap-3">
-                                                <div
-                                                    className="mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
-                                                    style={{ background: `${color}18`, border: `1.5px solid ${color}50` }}
-                                                >
-                                                    <Check className="w-2.5 h-2.5" style={{ color }} strokeWidth={3} />
+                                    {/* Features */}
+                                    <ul style={{
+                                        listStyle: "none",
+                                        padding: 0,
+                                        margin: "0 0 24px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 10,
+                                        flexGrow: 1,
+                                    }}>
+                                        {tier.features.map((feat, fi) => (
+                                            <li
+                                                key={feat}
+                                                className="cp-feat"
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 9,
+                                                    animationDelay: `${fi * 50}ms`,
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: 19,
+                                                    height: 19,
+                                                    borderRadius: "50%",
+                                                    background: isPopular ? "#1c1c1f" : accent.bg,
+                                                    border: `1.5px solid ${isPopular ? "#3f3f46" : accent.border}`,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    flexShrink: 0,
+                                                }}>
+                                                    <Check
+                                                        size={10}
+                                                        color={isPopular ? "#ffffff" : accent.check}
+                                                        strokeWidth={2.5}
+                                                    />
                                                 </div>
-                                                <span className="text-[13px] text-zinc-600 font-semibold leading-snug">
-                                                    {feature}
+                                                <span style={{
+                                                    fontSize: 13.5,
+                                                    color: isPopular ? "#d4d4d8" : "#52525b",
+                                                    fontWeight: 500,
+                                                    lineHeight: 1.4,
+                                                }}>
+                                                    {feat}
                                                 </span>
                                             </li>
                                         ))}
                                     </ul>
 
-                                    {/* ── CTA ── */}
+                                    {/* CTA Button */}
                                     <button
-                                        className={cn(
-                                            "px-10 py-2.5 rounded-xl border-2 border-zinc-900 font-black text-[13px] transition-all duration-300",
-                                            "shadow-[3px_3px_0_0_#18181b] hover:shadow-[5px_5px_0_0_#18181b] hover:-translate-x-0.5 hover:-translate-y-0.5",
-                                            isPopular
-                                                ? "bg-amber-400 text-zinc-900 hover:bg-amber-300"
-                                                : "bg-white text-zinc-900 hover:bg-zinc-900 hover:text-white"
-                                        )}
-                                        style={{ fontFamily: "'Syne', sans-serif" }}
+                                        className={cn("cp-btn", isPopular ? "cp-btn-popular" : "cp-btn-default")}
+                                        onClick={() => window.open("https://razorpay.com", "_blank")}
+                                        style={{
+                                            width: "100%",
+                                            padding: "11px 20px",
+                                            borderRadius: 10,
+                                            border: isPopular ? "1.5px solid #ffffff" : "1.5px solid #d4d4d8",
+                                            background: isPopular ? "#ffffff" : "#ffffff",
+                                            color: isPopular ? "#09090b" : "#3f3f46",
+                                            fontSize: 13.5,
+                                            fontWeight: 600,
+                                            letterSpacing: "0.01em",
+                                        }}
                                     >
                                         {tier.price === 0 ? "Start for Free" : "Get Started"}
                                     </button>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
 
-                {/* ─── Footer ─────────────────────────────────────────── */}
-                <p
-                    className="mt-10 text-zinc-400 text-[11px] font-medium"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                    No credit card required · Cancel anytime
-                </p>
-            </div>
-        </section>
+                    {/* Footer */}
+                    <p
+                        className="cp-footer"
+                        style={{
+                            textAlign: "center",
+                            marginTop: 36,
+                            fontSize: 12,
+                            color: "#a1a1aa",
+                            fontWeight: 400,
+                        }}
+                    >
+                        No credit card required · Cancel anytime · SSL encryption on all plans
+                    </p>
+
+                </div>
+            </section>
+        </>
     );
 }
 

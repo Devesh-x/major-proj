@@ -1,14 +1,13 @@
 import React from "react";
-import { Check, Cloud, Zap, Shield } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Color map - explicit for white-theme vibrancy
-const COLOR_MAP = {
-    zinc: "#3f3f46", // Darker zinc for contrast
-    indigo: "#4f46e5", // Indigo-600
-    purple: "#7c3aed", // Purple-600
-    amber: "#d97706", // Amber-600
-    blue: "#2563eb", // Blue-600
+const ACCENT = {
+    zinc: "#3f3f46",
+    indigo: "#4f46e5",
+    purple: "#7c3aed",
+    amber: "#d97706",
+    blue: "#2563eb",
 };
 
 function CreativePricing({
@@ -19,157 +18,151 @@ function CreativePricing({
 }) {
     return (
         <section
-            className="w-full bg-white overflow-hidden py-10 md:py-14 border-t border-zinc-100 flex flex-col items-center relative"
             id="pricing"
+            className="w-full bg-white pt-24 pb-20 border-t-2 border-zinc-100 flex flex-col items-center"
         >
-            {/* Section container with max-width and centering */}
-            <div className="w-full max-w-6xl mx-auto px-6 flex flex-col items-center relative z-10">
+            <div className="w-full max-w-5xl mx-auto px-8 flex flex-col items-center">
 
-                {/* Decorative ornaments - Very subtle */}
-                <div className="absolute top-0 left-0 text-3xl select-none pointer-events-none opacity-5 hidden xl:block animate-pulse" aria-hidden>⭐</div>
-                <div className="absolute top-5 right-0 text-2xl select-none pointer-events-none opacity-5 hidden xl:block animate-pulse" aria-hidden>✨</div>
-
-                {/* Header - Very compact */}
-                <div className="text-center mb-10 md:mb-12 max-w-2xl flex flex-col items-center px-4 relative z-20">
-                    <p className="text-indigo-600 font-bold text-[10px] mb-2 tracking-[0.2em] uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
+                {/* ─── Header ─────────────────────────────────────────── */}
+                <div className="text-center mb-16 flex flex-col items-center gap-3">
+                    <p
+                        className="text-indigo-500 font-bold text-[10px] tracking-[0.3em] uppercase"
+                        style={{ fontFamily: "'Syne', sans-serif" }}
+                    >
                         {tag}
                     </p>
-                    <div className="relative inline-block">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-zinc-900 tracking-tight leading-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
-                            {title}
-                        </h2>
-                        {/* Underline accent */}
-                        <div className="mx-auto mt-2 w-20 h-1.5 bg-indigo-500/10 rounded-full blur-lg" />
-                    </div>
-                    <p className="mt-3 text-sm md:text-base text-zinc-500 font-medium leading-relaxed max-w-lg px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <h2
+                        className="text-4xl md:text-5xl font-extrabold text-zinc-900 tracking-tight leading-tight"
+                        style={{ fontFamily: "'Syne', sans-serif" }}
+                    >
+                        {title}
+                    </h2>
+                    <p
+                        className="text-zinc-500 text-base font-medium leading-relaxed max-w-sm"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
                         {description}
                     </p>
                 </div>
 
-                {/* Cards grid - centered flex container */}
-                <div className="w-full flex flex-col md:flex-row justify-center items-stretch gap-6 lg:gap-8">
+                {/* ─── Cards ──────────────────────────────────────────── */}
+                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-7">
                     {tiers.map((tier, index) => {
                         const isPopular = tier.popular;
-                        const iconColor = COLOR_MAP[tier.color] ?? COLOR_MAP.indigo;
-                        const rotations = ["rotate-[-0.2deg]", "rotate-[0.2deg]", "rotate-[-0.3deg]"];
-                        const rot = rotations[index] ?? "";
+                        const color = ACCENT[tier.color] ?? ACCENT.indigo;
+                        const tilt = ["rotate-[-0.3deg]", "rotate-[0.4deg]", "rotate-[-0.2deg]"][index] ?? "";
 
                         return (
-                            <div
-                                key={tier.name}
-                                className={cn(
-                                    "relative group transition-all duration-500 w-full md:w-1/3 min-h-[460px] lg:min-h-[500px]",
-                                    rot
-                                )}
-                            >
-                                {/* Offset shadow layer */}
-                                <div
-                                    className={cn(
-                                        "absolute inset-0 rounded-[2rem] border-2 border-zinc-900 bg-zinc-900/5 transition-all duration-500",
-                                        "translate-x-[6px] translate-y-[6px] group-hover:translate-x-[8px] group-hover:translate-y-[8px]"
-                                    )}
-                                />
+                            <div key={tier.name} className={cn("relative group", tilt)}>
 
-                                {/* Card body - use justify-between for balanced distribution */}
-                                <div
-                                    className={cn(
-                                        "relative h-full rounded-[2rem] border-2 border-zinc-900 pt-10 pb-8 px-6 lg:px-8 flex flex-col items-center text-center transition-all duration-500",
-                                        "bg-white text-zinc-900 group-hover:translate-x-[-2px] group-hover:translate-y-[-2px] justify-between"
-                                    )}
-                                >
-                                    {/* Popular badge - Integrated inside card padding */}
+                                {/* offset shadow */}
+                                <div className="absolute inset-0 rounded-3xl border-2 border-zinc-900 translate-x-[7px] translate-y-[7px] transition-transform duration-500 group-hover:translate-x-[11px] group-hover:translate-y-[11px]" />
+
+                                {/* card */}
+                                <div className="relative rounded-3xl border-2 border-zinc-900 bg-white flex flex-col items-center text-center px-8 pt-10 pb-8 gap-0 transition-transform duration-500 group-hover:-translate-x-[2px] group-hover:-translate-y-[2px]">
+
+                                    {/* ── Popular badge ── */}
                                     {isPopular && (
-                                        <div className="absolute top-4 -right-2 rotate-6 z-20">
-                                            <span
-                                                className="inline-block bg-amber-400 text-zinc-900 font-black text-[9px] px-3.5 py-1.5 rounded-full border-2 border-zinc-900 shadow-md uppercase tracking-[0.1em] whitespace-nowrap"
-                                                style={{ fontFamily: "'Syne', sans-serif" }}
-                                            >
-                                                Popular choice
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* Top Content (Icon, Name, Description) */}
-                                    <div className="flex flex-col items-center w-full">
-                                        {/* Icon */}
-                                        <div
-                                            className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-zinc-50 shadow-md mb-4 bg-white shrink-0 transform transition-transform group-hover:scale-110"
-                                            style={{ color: iconColor }}
-                                        >
-                                            <div className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ backgroundColor: `${iconColor}10` }}>
-                                                {tier.icon}
-                                            </div>
-                                        </div>
-
-                                        {/* Plan name */}
-                                        <h3 className="text-2xl lg:text-3xl font-black text-zinc-900 leading-none tracking-tight mb-2 shrink-0" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                            {tier.name}
-                                        </h3>
-
-                                        {/* Description */}
-                                        <p className="text-zinc-500 text-[13px] font-medium leading-snug shrink-0 max-w-[180px]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                            {tier.description}
-                                        </p>
-                                    </div>
-
-                                    {/* Middle Content (Price, Features) */}
-                                    <div className="flex flex-col items-center w-full my-6">
-                                        {/* Price section */}
-                                        <div className="mb-8 shrink-0 flex flex-col items-center">
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="text-4xl lg:text-5xl font-black tracking-tighter leading-none text-zinc-900" style={{ fontFamily: "'Syne', sans-serif" }}>
-                                                    {tier.price === 0 ? "Free" : `$${tier.price}`}
-                                                </span>
-                                                {tier.price > 0 && (
-                                                    <span className="text-zinc-400 text-xs font-bold tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>/mo</span>
-                                                )}
-                                            </div>
-                                            {tier.price === 0 && (
-                                                <div className="flex items-center gap-1 mt-2 py-0.5 px-3 bg-emerald-50 rounded-full border border-emerald-100">
-                                                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                                                    <span className="text-emerald-700 text-[8px] uppercase tracking-[0.1em] font-black" style={{ fontFamily: "'Syne', sans-serif" }}>Free Forever</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Features list - Reliable gap-6 spacing */}
-                                        <ul className="flex flex-col gap-6 text-left inline-block" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                            {tier.features.map((feature) => (
-                                                <li key={feature} className="flex items-center gap-3">
-                                                    <div className="w-4 h-4 rounded-full flex items-center justify-center border-2 border-zinc-100 bg-zinc-50 shrink-0">
-                                                        <Check className="w-2.5 h-2.5" style={{ color: iconColor }} strokeWidth={4} />
-                                                    </div>
-                                                    <span className="text-zinc-700 text-[0.8rem] lg:text-[0.85rem] font-bold leading-tight tracking-tight">
-                                                        {feature}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    {/* Bottom Content (CTA Button) */}
-                                    <div className="w-full shrink-0 flex justify-center mt-2">
-                                        <button
-                                            className={cn(
-                                                "w-fit min-w-[160px] px-8 py-2.5 h-10 font-black text-xs lg:text-[13px] rounded-xl border-2 border-zinc-900 transition-all duration-300 shadow-[3px_3px_0px_0px] shadow-zinc-900 hover:shadow-[5px_5px_0px_0px] hover:translate-x-[-1px] hover:translate-y-[-1px]",
-                                                isPopular
-                                                    ? "bg-amber-400 text-zinc-900 hover:bg-amber-300"
-                                                    : "bg-white text-zinc-900 hover:bg-zinc-900 hover:text-white"
-                                            )}
+                                        <span
+                                            className="absolute -top-4 right-6 rotate-3 inline-block bg-amber-400 text-zinc-900 font-black text-[9px] px-3 py-1.5 rounded-full border-2 border-zinc-900 uppercase tracking-widest shadow-sm"
                                             style={{ fontFamily: "'Syne', sans-serif" }}
                                         >
-                                            {tier.price === 0 ? "Start for Free" : "Get Started Now"}
-                                        </button>
+                                            Popular
+                                        </span>
+                                    )}
+
+                                    {/* ── Name ── */}
+                                    <h3
+                                        className="text-2xl font-black text-zinc-900 tracking-tight leading-none mb-2"
+                                        style={{ fontFamily: "'Syne', sans-serif" }}
+                                    >
+                                        {tier.name}
+                                    </h3>
+
+                                    {/* ── Description ── */}
+                                    <p
+                                        className="text-zinc-400 text-[13px] font-medium leading-snug max-w-[180px] mb-7"
+                                        style={{ fontFamily: "'Inter', sans-serif" }}
+                                    >
+                                        {tier.description}
+                                    </p>
+
+                                    {/* ── Divider ── */}
+                                    <div className="w-full h-px bg-zinc-100 mb-7" />
+
+                                    {/* ── Price ── */}
+                                    <div className="flex flex-col items-center mb-9">
+                                        <div className="flex items-baseline gap-1">
+                                            <span
+                                                className="text-5xl font-black tracking-tighter text-zinc-900 leading-none"
+                                                style={{ fontFamily: "'Syne', sans-serif" }}
+                                            >
+                                                {tier.price === 0 ? "Free" : `$${tier.price}`}
+                                            </span>
+                                            {tier.price > 0 && (
+                                                <span
+                                                    className="text-zinc-400 text-sm font-semibold"
+                                                    style={{ fontFamily: "'Inter', sans-serif" }}
+                                                >
+                                                    /mo
+                                                </span>
+                                            )}
+                                        </div>
+                                        {tier.price === 0 && (
+                                            <span
+                                                className="mt-2 text-emerald-600 text-[10px] font-black uppercase tracking-widest"
+                                                style={{ fontFamily: "'Syne', sans-serif" }}
+                                            >
+                                                ● Free Forever
+                                            </span>
+                                        )}
                                     </div>
+
+                                    {/* ── Features ── */}
+                                    <ul
+                                        className="w-full flex flex-col gap-5 text-left mb-10"
+                                        style={{ fontFamily: "'Inter', sans-serif" }}
+                                    >
+                                        {tier.features.map((feature) => (
+                                            <li key={feature} className="flex items-start gap-3">
+                                                <div
+                                                    className="mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
+                                                    style={{ background: `${color}18`, border: `1.5px solid ${color}50` }}
+                                                >
+                                                    <Check className="w-2.5 h-2.5" style={{ color }} strokeWidth={3} />
+                                                </div>
+                                                <span className="text-[13px] text-zinc-600 font-semibold leading-snug">
+                                                    {feature}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {/* ── CTA ── */}
+                                    <button
+                                        className={cn(
+                                            "px-10 py-2.5 rounded-xl border-2 border-zinc-900 font-black text-[13px] transition-all duration-300",
+                                            "shadow-[3px_3px_0_0_#18181b] hover:shadow-[5px_5px_0_0_#18181b] hover:-translate-x-0.5 hover:-translate-y-0.5",
+                                            isPopular
+                                                ? "bg-amber-400 text-zinc-900 hover:bg-amber-300"
+                                                : "bg-white text-zinc-900 hover:bg-zinc-900 hover:text-white"
+                                        )}
+                                        style={{ fontFamily: "'Syne', sans-serif" }}
+                                    >
+                                        {tier.price === 0 ? "Start for Free" : "Get Started"}
+                                    </button>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
 
-                {/* Bottom note */}
-                <p className="text-center text-zinc-400 text-[10px] mt-8 font-medium max-w-sm px-6 leading-relaxed opacity-50" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    No credit card required. Cancel anytime.
+                {/* ─── Footer ─────────────────────────────────────────── */}
+                <p
+                    className="mt-10 text-zinc-400 text-[11px] font-medium"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                    No credit card required · Cancel anytime
                 </p>
             </div>
         </section>

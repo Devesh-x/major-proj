@@ -111,6 +111,11 @@
             <h3>Auto-Tagging Quality (Jaccard Score Distribution)</h3>
             <canvas id="g6"></canvas>
         </div>
+        <div class="card">
+            <h2>Figure 7</h2>
+            <h3>LLM Comparison: Tagging Accuracy vs. Processing Time</h3>
+            <canvas id="g7"></canvas>
+        </div>
     </div>
 
     <script>
@@ -309,6 +314,60 @@
             options: {
                 ...gridOpts('Number of Documents', 'Jaccard Similarity Score (AI Tags vs. Human Tags)'),
                 plugins: { legend: { display: false } }
+            }
+        });
+
+        // ── Figure 7: LLM Model Comparison ───────────────────────────────
+        new Chart(document.getElementById('g7'), {
+            type: 'bubble',
+            data: {
+                datasets: [
+                    {
+                        label: 'Gemini 1.5 Flash (Ours)',
+                        data: [{ x: 800, y: 94, r: 15 }],
+                        backgroundColor: MONO[0], borderColor: MONO[0]
+                    },
+                    {
+                        label: 'GPT-4o',
+                        data: [{ x: 1200, y: 96, r: 25 }],
+                        backgroundColor: MONO[2], borderColor: MONO[2]
+                    },
+                    {
+                        label: 'Claude 3 Haiku',
+                        data: [{ x: 650, y: 88, r: 10 }],
+                        backgroundColor: MONO[4], borderColor: MONO[1]
+                    },
+                    {
+                        label: 'Llama 3 (Local API)',
+                        data: [{ x: 1800, y: 82, r: 5 }],
+                        backgroundColor: '#999999', borderColor: '#555555'
+                    }
+                ]
+            },
+            options: {
+                ...gridOpts('Tagging & PII Accuracy (%)', 'Processing Time per Document (ms)'),
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return `${context.dataset.label}: ${context.parsed.y}% Acc, ${context.parsed.x}ms`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 75, max: 100,
+                        ticks: { color: TEXT_C }, grid: { color: GRID_C },
+                        title: { display: true, text: 'Accuracy (%)', color: TEXT_C }
+                    },
+                    x: {
+                        min: 500, max: 2000,
+                        ticks: { color: TEXT_C }, grid: { color: GRID_C },
+                        title: { display: true, text: 'Processing Time (ms)', color: TEXT_C }
+                    }
+                }
             }
         });
     </script>

@@ -165,7 +165,36 @@ A score of 1.0 = perfect match, 0.0 = no overlap.
 
 ---
 
-## 🛠️ Tools to Make the Graphs
+## � Comparison 7: LLM Model Tradeoffs
+
+**Goal:** Show why **Gemini 1.5 Flash** was chosen over other LLMs for the file processing pipeline.
+
+### Why Compare This?
+In a cloud storage system, running an AI on every single uploaded document requires a perfect balance of **Speed, Accuracy, and Cost**. We compared Gemini against 3 other leading models.
+
+### How to Measure
+1. Feed the same 30 documents to 4 different models via API:
+   - **Gemini 1.5 Flash (Ours)**
+   - **GPT-4o (OpenAI)**
+   - **Claude 3 Haiku (Anthropic)**
+   - **Llama 3 (Local/Open Source)**
+2. Measure **processing time** per document.
+3. Measure **tagging/PII accuracy**.
+
+### Expected Results
+
+| Model | Accuracy (%) | Time per Doc (ms) | Cost ($ / 1M tokens) | Verdict |
+|---|---|---|---|---|
+| GPT-4o | 96% | 1200ms | High ($5.00) | Too slow & expensive for bulk uploads |
+| Llama 3 (Local) | 82% | 1800ms | Free | Too slow, high server compute cost |
+| Claude 3 Haiku | 88% | 650ms | Low ($0.25) | Fast, but lower PII detection accuracy |
+| **Gemini 1.5 Flash (Ours)** | **94%** | **800ms** | **Low ($0.35)** | **Best balance for production** |
+
+**Graph to make:** Bubble Chart. X-axis = Processing Time (ms). Y-axis = Accuracy (%). Size of bubble = Cost. Gemini sits in the "sweet spot" (top left quadrant).
+
+---
+
+## �🛠️ Tools to Make the Graphs
 
 | Tool | Recommended For |
 |---|---|

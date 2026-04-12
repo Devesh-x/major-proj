@@ -1,15 +1,21 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+/**
+ * Gemini API Key Manager — uses the new @google/genai SDK.
+ * Supports round-robin key rotation on 429 / RESOURCE_EXHAUSTED errors.
+ * 
+ * Because @google/genai is ESM-only, we use dynamic import() and expose
+ * an async init() + executeWithFallback() wrapper.
+ */
 
 class GeminiKeyManager {
     constructor() {
         this.keys = this._loadKeys();
         this.currentIndex = 0;
-        this.clients = this.keys.map(key => new GoogleGenerativeAI(key));
+        this.clients = []; // filled by init()
+        this._ready = this._init();
     }
 
     _loadKeys() {
         const keyString = process.env.GEMINI_API_KEY || '';
-        // Split by comma, remove whitespace, and filter out empty strings
         const parsedKeys = keyString.split(',').map(k => k.trim()).filter(k => k);
 
         if (parsedKeys.length === 0) {
@@ -20,48 +26,70 @@ class GeminiKeyManager {
         return parsedKeys;
     }
 
+    async _init() {
+        if (this.keys.length === 0) return;
+        try {
+            const { GoogleGenAI } = await import('@google/genai');
+            this.clients = this.keys.map(key => new GoogleGenAI({ apiKey: key }));
+            console.log('✅ Gemini SDK (@google/genai) initialized successfully.');
+        } catch (e) {
+            console.error('❌ Failed to initialize @google/genai SDK:', e.message);
+        }
+    }
+
     /**
-     * Executes a GoogleGenerativeAI operation, automatically falling back to the next
-     * available API key if a 429 (Resource Exhausted) error occurs.
-     * 
-     * @param {Function} operation - A function that takes a `genAI` client instance and returns a Promise.
-     * @returns {Promise<any>} The result of the operation.
+     * Executes a Gemini operation with automatic key rotation on rate-limit errors.
+     * @param {Function} operation — receives a GoogleGenAI client instance, returns a Promise.
+     * @param {Object} options — custom options for the execution.
+     * @param {number} options.maxRetries — maximum retries for rate limiting.
      */
-    async executeWithFallback(operation) {
+    async executeWithFallback(operation, options = {}) {
+        await this._ready;
+
         if (this.clients.length === 0) {
-            throw new Error("No Gemini API keys available to process the request.");
+            throw new Error('No Gemini API keys available.');
         }
 
         let attempts = 0;
-        const maxAttempts = this.clients.length;
+        const maxAttempts = options.maxRetries || Math.max(this.clients.length, 50); 
 
         while (attempts < maxAttempts) {
             const currentClient = this.clients[this.currentIndex];
             try {
-                // Try executing the AI operation with the current client
                 return await operation(currentClient);
             } catch (error) {
-                // Check if the error is a rate limit (429) or related to quota
-                const isRateLimit = error.message?.includes('429') ||
-                    error.message?.includes('RESOURCE_EXHAUSTED') ||
+                const msg = error.message || '';
+                const isRateLimit =
+                    msg.includes('429') ||
+                    msg.includes('RESOURCE_EXHAUSTED') ||
                     error.status === 429;
 
                 if (isRateLimit) {
-                    console.warn(`[Key Manager] Key ${this.currentIndex + 1}/${maxAttempts} exhausted. Rotating to next key...`);
-                    // Move to the next key, looping back to 0 if at the end
-                    this.currentIndex = (this.currentIndex + 1) % this.clients.length;
                     attempts++;
+                    console.warn(`[Key Manager] Throttled (Attempt ${attempts}/${maxAttempts})...`);
+                    
+                    // If we've tried all keys and are still throttled, and it's the last few attempts, wait 35s
+                    if (attempts > (maxAttempts - 2)) {
+                        console.log(`[Key Manager] 🛑 All keys exhausted. Entering 35s "Quota Recovery" sleep...`);
+                        await new Promise(resolve => setTimeout(resolve, 35000));
+                    } else {
+                        // Progressive Backoff (1s per attempt + jitter)
+                        const delay = (attempts * 1000) + Math.floor(Math.random() * 500);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+
+                    // Rotate if possible
+                    if (this.clients.length > 1) {
+                        this.currentIndex = (this.currentIndex + 1) % this.clients.length;
+                    }
                 } else {
-                    // If it's a different kind of error (e.g., bad prompt), throw it immediately
                     throw error;
                 }
             }
         }
 
-        // Output error if all keys have been exhausted
-        throw new Error(`All ${maxAttempts} Gemini API keys have been exhausted (429 Rate Limit).`);
+        throw new Error(`Exhausted all retries after ${maxAttempts} attempts due to Rate Limits.`);
     }
 }
 
-// Export a singleton instance
 module.exports = new GeminiKeyManager();

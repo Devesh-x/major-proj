@@ -66,8 +66,6 @@ function CreativePricing({
     return (
         <>
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
         .cp-wrap * { box-sizing: border-box; }
 
         /* ── Header animations ── */

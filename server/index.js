@@ -3,13 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-const { analyzeFile, generateEmbedding } = require('./services/gemini');
-const { chatWithDocument } = require('./services/standalone_chat');
+const { analyzeFile, generateEmbedding } = require('./services/hf_analysis');
+const { chatWithDocument } = require('./services/hf_chat');
 const supabase = require('./services/supabase');
 const crypto = require('crypto');
 
@@ -21,10 +20,18 @@ app.use(express.json());
 
 // Auth Middleware
 const authenticate = async (req, res, next) => {
+  // Dev bypass — set DEV_BYPASS=true in .env to skip auth during development
+  if (process.env.DEV_BYPASS === 'true') {
+    req.user = { id: 'local-user-123', email: 'local@cloudsense.ai' };
+    return next();
+  }
+
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const { createClient } = require('@supabase/supabase-js');
+  const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  const { data: { user }, error } = await authClient.auth.getUser(token);
   if (error || !user) return res.status(401).json({ error: 'Invalid token' });
 
   req.user = user;
@@ -240,14 +247,29 @@ app.get('/api/search', authenticate, async (req, res) => {
 
     if (mode === 'semantic') {
       const embedding = await generateEmbedding(query);
-      const { data, error } = await supabase.rpc('match_files', {
-        query_embedding: embedding,
-        match_threshold: 0.3,
-        match_count: 10
-      });
-      if (error) throw error;
-      results = data;
-    } else {
+      if (!embedding) {
+          // If query too short for embedding, fallback to the fuzzy logic below
+          console.log('[Search] Query too short for embedding, falling back to fuzzy.');
+      } else {
+          const { data, error } = await supabase.rpc('match_files', {
+              query_embedding: embedding,
+              match_threshold: 0.15, // Lowered threshold for better discovery
+              match_count: 10,
+              user_id_filter: req.user.id
+          });
+          if (error) throw error;
+          results = data;
+          
+          if (results.length > 0) {
+              return res.json({
+                  results,
+                  performance: { time_ms: Date.now() - tStart, mode: 'semantic' }
+              });
+          }
+      }
+    }
+
+    // Default: Fuzzy Search
       // Fuzzy Search using pg_trgm (via ILIKE with our new GIST indexes)
       let queryBuilder = supabase
         .from('file_metadata')
@@ -262,15 +284,14 @@ app.get('/api/search', authenticate, async (req, res) => {
 
       if (error) throw error;
       results = data;
-    }
 
-    res.json({
-      results,
-      performance: {
-        time_ms: Date.now() - tStart,
-        mode: mode
-      }
-    });
+      res.json({
+        results,
+        performance: {
+          time_ms: Date.now() - tStart,
+          mode: mode
+        }
+      });
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
@@ -285,6 +306,7 @@ app.post('/api/chat', authenticate, async (req, res) => {
 
     console.log(`User ${req.user.id} chatting with file ${fileId}: ${query}`);
     const answer = await chatWithDocument(fileId, query, req.user.id);
+    console.log(`Chat complete. Sending answer back to client.`);
 
     res.json({ answer });
   } catch (error) {
@@ -293,6 +315,37 @@ app.post('/api/chat', authenticate, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+const startServer = async () => {
+  try {
+    // 1. Initialize HF AI
+    const hf = require('./services/hf_analysis');
+    await hf.init();
+    
+    // 2. Start the Express Listener
+    const server = app.listen(port, () => {
+      console.log(`🚀 CloudSense Backend is LIVE on port ${port}`);
+      console.log(`📡 Ready for AI File Processing & Chat.`);
+    });
+
+    // 3. Error Handling for Startup
+    server.on('error', (e) => {
+      if (e.code === 'EADDRINUSE') {
+        console.error(`❌ FATAL: Port ${port} is already in use by another application!`);
+        console.error(`👉 Try killing the old process or changing PORT in .env`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server startup error:', e);
+      }
+    });
+
+    // Keep-alive heartbeat (ensures terminal stays open in all environments)
+    setInterval(() => {}, 1000 * 60 * 60); 
+
+  } catch (err) {
+    console.error('💥 CRITICAL: Failed to start the CloudSense server:', err.message);
+    process.exit(1);
+  }
+};
+
+// Launch!
+startServer();

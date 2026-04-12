@@ -1,100 +1,130 @@
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse'); // Kept for safety, though multimodal is primary
 const mammoth = require('mammoth');
 const keyManager = require('../utils/geminiKeys');
+
+// ── Model names (new SDK) ──────────────────────────────────────────────
+const GENERATION_MODEL = 'gemini-2.0-flash';
+const EMBEDDING_MODEL  = 'gemini-embedding-001';
+
+/**
+ * Metadata Schema for JSON Mode
+ */
+const ANALYSIS_SCHEMA = {
+    type: 'object',
+    properties: {
+        tags: { type: 'array', items: { type: 'string' } },
+        summary: { type: 'string' },
+        isPII: { type: 'boolean' },
+        piiType: { type: 'string', nullable: true },
+        title: { type: 'string' },
+        category: { type: 'string' }
+    },
+    required: ['tags', 'summary', 'isPII', 'title', 'category']
+};
 
 /**
  * Semi-intelligent fallback for file analysis when Gemini API is unavailable.
  */
 function getMockAnalysis(file, textContent) {
-    const name = file.originalname?.toLowerCase() || "";
-    const text = textContent?.toLowerCase() || "";
+    const name = file.originalname?.toLowerCase() || '';
+    const text = textContent?.toLowerCase() || '';
 
-    let category = "General";
-    let tags = ["Upload"];
+    let category = 'General';
+    let tags = ['Upload'];
     let isPII = false;
     let piiType = null;
 
-    // Detect Category
-    if (name.includes("invoice") || name.includes("receipt") || text.includes("amount") || text.includes("billing")) {
-        category = "Finance";
-        tags.push("invoice", "payment");
-    } else if (name.includes("resume") || name.includes("cv") || text.includes("experience") || text.includes("education")) {
-        category = "Work";
-        tags.push("career", "resume");
-    } else if (name.includes("passport") || name.includes("id") || name.includes("license") || text.includes("identity")) {
-        category = "Identity";
+    if (name.includes('invoice') || name.includes('receipt') || text.includes('amount') || text.includes('billing')) {
+        category = 'Finance';
+        tags.push('invoice', 'payment');
+    } else if (name.includes('resume') || name.includes('cv') || text.includes('experience') || text.includes('education')) {
+        category = 'Work';
+        tags.push('career', 'resume');
+    } else if (name.includes('passport') || name.includes('id') || name.includes('license') || text.includes('identity')) {
+        category = 'Identity';
         isPII = true;
-        piiType = "Government ID";
-        tags.push("legal", "sensitive");
-    } else if (name.includes("contract") || name.includes("agreement") || text.includes("terms")) {
-        category = "Legal";
-        tags.push("legal", "agreement");
-    } else if (file.mimetype?.startsWith("image")) {
-        category = "Media";
-        tags.push("image");
+        piiType = 'Government ID';
+        tags.push('legal', 'sensitive');
+    } else if (name.includes('contract') || name.includes('agreement') || text.includes('terms')) {
+        category = 'Legal';
+        tags.push('legal', 'agreement');
+    } else if (file.mimetype?.startsWith('image')) {
+        category = 'Media';
+        tags.push('image');
     }
 
     return {
         tags: [...new Set(tags)],
-        summary: `Local analysis of "${file.originalname}". Full AI parsing throttled.`,
+        summary: `CloudSense AI is currently at high capacity (429 Rate Limit). A full analysis of "${file.originalname}" will be completed once the queue clears. In the meantime, the file is ready for secure storage.`,
         isPII,
         piiType,
-        title: file.originalname.split(".")[0],
+        title: file.originalname.split('.')[0],
         category,
-        textContent
+        textContent,
     };
 }
 
 /**
- * Parses file content and uses Gemini to generate tags, detect PII, and summarize content.
+ * Parses file content and uses Gemini to generate tags, detect PII, and summarize.
+ * Uses NATIVE MULTIMODAL support for PDF and Images.
  */
 async function analyzeFile(file) {
     let textContent = '';
+    let contents = [];
+
+    // 1. Determine modality
+    const isPDF = file.mimetype === 'application/pdf';
+    const isImage = file.mimetype.startsWith('image/');
+    const isWord = file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
     try {
-        if (file.mimetype === 'application/pdf') {
-            const data = await pdf(file.buffer);
-            textContent = data.text;
-        } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        if (isPDF || isImage) {
+            // MULTIMODAL: Send the document directly
+            contents = [
+                {
+                    inlineData: {
+                        mimeType: file.mimetype,
+                        data: file.buffer.toString('base64')
+                    }
+                },
+                {
+                    text: `Analyze this ${isPDF ? 'PDF' : 'image'} document and extract metadata.`
+                }
+            ];
+            textContent = `[Direct Multimodal Parsing: ${file.originalname}]`;
+        } else if (isWord) {
             const data = await mammoth.extractRawText({ buffer: file.buffer });
             textContent = data.value;
+            contents = [{ text: `Analyze this content:\n\n${textContent.substring(0, 5000)}` }];
         } else if (file.mimetype.startsWith('text/')) {
             textContent = file.buffer.toString('utf8');
+            contents = [{ text: `Analyze this content:\n\n${textContent.substring(0, 5000)}` }];
         } else {
-            textContent = `[Image/Binary File: ${file.originalname}]`;
+            textContent = `[Binary/Unsupported File: ${file.originalname}]`;
+            contents = [{ text: `The file type is ${file.mimetype}. Analyze based on title: ${file.originalname}` }];
         }
     } catch (e) {
-        console.warn('Text extraction failed:', e);
+        console.warn('Preprocessing failed:', e.message);
         textContent = `[Parsing Failed: ${file.originalname}]`;
+        contents = [{ text: `Preprocessing failed for ${file.originalname}. Analyze based on name alone if possible.` }];
     }
 
     try {
-        const prompt = `
-            Analyze the following document content and provide the following in JSON format:
-            1. "tags": (Array of strings) Relevant keywords for this document.
-            2. "summary": (String) A brief 1-2 sentence summary.
-            3. "isPII": (Boolean) Does this document look like a sensitive ID proof (Passport, National ID, Social Security, PAN, etc.)?
-            4. "piiType": (String or null) If isPII is true, what type of ID is it?
-            5. "title": (String) A descriptive title for the file.
-            6. "category": (String) A single high-level category for organization (e.g., 'Finance', 'Work', 'Personal', 'Identity', 'Legal').
+        return await keyManager.executeWithFallback(async (ai) => {
+            const response = await ai.models.generateContent({
+                model: GENERATION_MODEL,
+                contents: contents,
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: ANALYSIS_SCHEMA
+                }
+            });
 
-            Document Content:
-            ${textContent.substring(0, 10000)} 
-        `;
-
-        // Wrap the Gemini call inside the key manager failover
-        return await keyManager.executeWithFallback(async (genAI_client) => {
-            const model = genAI_client.getGenerativeModel({ model: "gemini-2.0-flash" });
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-
-            const jsonStr = text.match(/\{[\s\S]*\}/)[0];
-            const resObj = JSON.parse(jsonStr);
-            return { ...resObj, textContent };
+            const data = JSON.parse(response.text);
+            return { ...data, textContent };
         });
     } catch (e) {
-        console.error('All Gemini keys failed or parsing failed, using Smart Fallback:', e.message);
+        console.error('All Gemini keys failed or generation failed:', e.message);
         return getMockAnalysis(file, textContent);
     }
 }
@@ -104,17 +134,21 @@ async function analyzeFile(file) {
  */
 async function generateEmbedding(text) {
     try {
-        return await keyManager.executeWithFallback(async (genAI_client) => {
-            const model = genAI_client.getGenerativeModel({ model: "gemini-embedding-001" });
-            const result = await model.embedContent(text.substring(0, 8000));
-            return result.embedding.values;
+        return await keyManager.executeWithFallback(async (ai) => {
+            const result = await ai.models.embedContent({
+                model: EMBEDDING_MODEL,
+                contents: text.substring(0, 8000),
+            });
+            return result.embeddings[0].values;
         });
     } catch (e) {
-        console.warn('Embedding generation failed (all API keys busy).');
+        console.warn('Embedding generation failed (all API keys busy):', e.message);
         return null;
     }
 }
 
-module.exports = { analyzeFile, generateEmbedding };
+async function init() {
+    return await keyManager._ready;
+}
 
-module.exports = { analyzeFile, generateEmbedding };
+module.exports = { analyzeFile, generateEmbedding, init };

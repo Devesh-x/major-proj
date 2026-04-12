@@ -178,7 +178,7 @@ export const Timeline = ({ data }) => {
     return (
         <div
             ref={containerRef}
-            style={{ width: "100%", background: "#fff", fontFamily: "'Inter', sans-serif" }}
+            style={{ width: "100%", background: "#fff", fontFamily: "'Inter', sans-serif", position: "relative" }}
         >
             {/* Section header */}
             <div style={{ maxWidth: 1120, margin: "0 auto", padding: "96px 40px 0" }}>

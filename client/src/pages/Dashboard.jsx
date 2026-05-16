@@ -64,7 +64,7 @@ function FileCard({ file: f, idx, viewMode, isSelected, isBlurred, getFileUrl, t
 
     if (viewMode === 'list') {
         return (
-            <div key={f.id} onClick={() => window.open(getFileUrl(f.storage_path), '_blank')}
+            <div key={f.id} onClick={() => isBlurred ? togglePrivacy(f.id) : window.open(getFileUrl(f.storage_path), '_blank')}
                 className={`file-card-list${isSelected ? ' selected' : ''}`}
                 style={{ animationDelay: `${idx * 30}ms` }}
             >
@@ -77,8 +77,8 @@ function FileCard({ file: f, idx, viewMode, isSelected, isBlurred, getFileUrl, t
                 </div>
                 {f.is_pii && <ShieldAlert size={14} color="#ef4444" />}
                 <div style={{ display: 'flex', gap: 2 }}>
-                    <button className="icon-btn" title="Chat with AI" onClick={ev => { ev.stopPropagation(); setSelectedFile(f); }}><MessageSquare size={14} /></button>
-                    <button className="icon-btn" onClick={ev => { ev.stopPropagation(); window.open(getFileUrl(f.storage_path), '_blank'); }}><Download size={14} /></button>
+                    <button className="icon-btn" title="Chat with AI" onClick={ev => { ev.stopPropagation(); isBlurred ? togglePrivacy(f.id) : setSelectedFile(f); }}><MessageSquare size={14} /></button>
+                    <button className="icon-btn" onClick={ev => { ev.stopPropagation(); isBlurred ? togglePrivacy(f.id) : window.open(getFileUrl(f.storage_path), '_blank'); }}><Download size={14} /></button>
                     <button className="icon-btn danger" onClick={ev => { ev.stopPropagation(); handleDelete(f.id); }}><Trash2 size={14} /></button>
                 </div>
             </div>
@@ -86,7 +86,7 @@ function FileCard({ file: f, idx, viewMode, isSelected, isBlurred, getFileUrl, t
     }
 
     return (
-        <div key={f.id} onClick={() => window.open(getFileUrl(f.storage_path), '_blank')}
+        <div key={f.id} onClick={() => isBlurred ? togglePrivacy(f.id) : window.open(getFileUrl(f.storage_path), '_blank')}
             className={`file-card file-appear${isSelected ? ' selected' : ''}`}
             style={{ animationDelay: `${idx * 35}ms` }}
         >
@@ -106,8 +106,8 @@ function FileCard({ file: f, idx, viewMode, isSelected, isBlurred, getFileUrl, t
                     <FileIcon type={f.type} size={18} />
                 </div>
                 <div style={{ display: 'flex', gap: 1 }}>
-                    <button className="icon-btn" title="Chat with AI" onClick={ev => { ev.stopPropagation(); setSelectedFile(f); }}><MessageSquare size={13} /></button>
-                    <button className="icon-btn" onClick={ev => { ev.stopPropagation(); window.open(getFileUrl(f.storage_path), '_blank'); }}><Download size={13} /></button>
+                    <button className="icon-btn" title="Chat with AI" onClick={ev => { ev.stopPropagation(); isBlurred ? togglePrivacy(f.id) : setSelectedFile(f); }}><MessageSquare size={13} /></button>
+                    <button className="icon-btn" onClick={ev => { ev.stopPropagation(); isBlurred ? togglePrivacy(f.id) : window.open(getFileUrl(f.storage_path), '_blank'); }}><Download size={13} /></button>
                     <button className="icon-btn danger" onClick={ev => { ev.stopPropagation(); handleDelete(f.id); }}><Trash2 size={13} /></button>
                 </div>
             </div>

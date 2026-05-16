@@ -135,9 +135,16 @@ function classifyFile(file, textContent) {
         }
     }
 
-    if (text.includes('bank account') || text.includes('credit card') || text.includes('routing number')) {
+    const financeKeywords = ['bank account', 'credit card', 'creditcard', 'debit card', 'routing number', 'visa', 'mastercard', 'amex'];
+    const hasFinanceKeyword = financeKeywords.some(k => name.includes(k) || text.includes(k));
+    // Check for 13-16 digit numbers typically found on cards
+    const hasCardNumber = /\b(?:\d[ -]*?){13,16}\b/.test(text);
+
+    if (hasFinanceKeyword || hasCardNumber) {
         isPII = true; piiType = 'Financial Data';
         if (!tags.includes('sensitive')) tags.push('sensitive');
+        category = 'Finance';
+        console.log(`[Security] 🛡️  Flagged "${file.originalname}" as Financial Data.`);
     }
 
     const title = (file.originalname || 'Untitled').replace(/\.[^.]+$/, '');
